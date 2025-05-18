@@ -1,107 +1,51 @@
-# Hirestack Job Application Assistant
+# Optimyze
 
-A modern, AI-powered job application platform that helps users find relevant jobs, generate tailored resumes and cover letters, and track their application process.
+## The Intelligent Job Application Assistant
 
-## System Architecture
+Optimyze is an advanced platform that combines job aggregation with AI-powered application document generation. It helps job seekers find relevant opportunities and create tailored resumes and cover letters that highlight their most relevant skills and experiences.
 
-The system is built using a microservices architecture with the following core components:
+## Features
 
-- **Data Ingestion Layer**: Job scraping and ETL pipeline using Scrapy, Airflow, and Kafka
-- **Data Processing Layer**: ML processing pipeline using PyTorch/TensorFlow and Apache Spark
-- **Storage Layer**: PostgreSQL, Elasticsearch, and Pinecone/Weaviate for vector storage
-- **Application Layer**: Django REST Framework backend with Go microservices
-- **Analytics Layer**: Data pipeline using Apache Spark and dbt with Metabase visualizations
+- **Comprehensive Job Search**: Aggregate listings from multiple sources with advanced filtering
+- **AI-Powered Matching**: Find jobs that best match your skills and experience
+- **Smart Document Generation**: Create custom resumes and cover letters tailored to specific job postings
+- **Market Insights**: Access analytics on job market trends and skill demand
+- **User-Friendly Interface**: Intuitive UI designed for a seamless application process
 
-## Project Structure
+## Architecture
 
-```
-hirestack/
-├── api/                    # Django REST Framework API
-│   ├── core/              # Core API functionality
-│   ├── jobs/              # Job-related endpoints
-│   ├── users/             # User management
-│   └── ml/                # ML model endpoints
-├── scrapers/              # Job scraping services
-│   ├── common/            # Shared scraping utilities
-│   └── sources/          # Source-specific scrapers
-├── ml/                    # Machine learning components
-│   ├── models/            # ML model definitions
-│   ├── training/          # Model training scripts
-│   └── inference/         # Model inference code
-├── services/              # Go microservices
-│   ├── alerts/            # Real-time job alerts
-│   └── recommendations/   # Job recommendations
-├── airflow/               # Airflow DAGs and configs
-│   ├── dags/             # ETL and ML pipeline DAGs
-│   └── plugins/          # Custom Airflow plugins
-├── analytics/             # Analytics components
-│   ├── dbt/              # dbt transformations
-│   └── dashboards/       # Metabase dashboard configs
-└── infrastructure/        # Infrastructure as Code
-    └── terraform/        # Terraform configurations
-```
+Optimyze is built with a modern tech stack designed for scalability and performance:
 
-## Technology Stack
+### Frontend
+- React.js and Next.js for the user interface
+- Hosted on Vercel for optimal performance
 
-- **Backend**: Python 3.11+, Django 5.0+, Go 1.21+
-- **Databases**: PostgreSQL 15+, Elasticsearch 8+, Redis 7+
-- **Machine Learning**: PyTorch 2.0+, TensorFlow 2.13+, scikit-learn 1.3+
-- **Data Pipeline**: Apache Airflow 2.7+, Apache Kafka 3.5+, Apache Spark 3.5+
-- **Infrastructure**: AWS (ECS, Lambda, RDS, OpenSearch)
+### Backend
+- Django REST Framework for the main API
+- PostgreSQL for structured data storage
+- Elasticsearch for powerful search capabilities
+- Redis for caching and performance optimization
 
-## Setup Instructions
+### AI & ML Components
+- PyTorch and scikit-learn for machine learning models
+- NLP processing pipeline for job description analysis
+- Retrieval-Augmented Generation (RAG) for document creation
+- LangChain for AI agent orchestration
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/hirestack.git
-cd hirestack
-```
+### Data Pipeline
+- Apache Airflow for workflow orchestration
+- Apache Kafka for event streaming
+- Apache Spark for large-scale data processing
 
-2. Create and activate a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: .\venv\Scripts\activate
-```
+## Getting Started
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+### Prerequisites
 
-4. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
+- Python 3.9+
+- Node.js 18+
+- PostgreSQL 14+
+- Docker and Docker Compose
 
-5. Initialize the database:
-```bash
-cd api
-python manage.py migrate
-```
+### Development Setup
 
-6. Start the development server:
-```bash
-python manage.py runserver
-```
-
-## Development Guidelines
-
-- Follow PEP 8 style guide for Python code
-- Use Black for code formatting
-- Write unit tests for all new features
-- Document all functions and classes using docstrings
-- Use type hints in Python code
-- Follow Go style guide for Go services
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+1. Clone the repository
