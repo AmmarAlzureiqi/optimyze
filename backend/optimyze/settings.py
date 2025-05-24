@@ -22,7 +22,7 @@ environ.Env.read_env(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env(SECRET_KEY)
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=False)
@@ -85,14 +85,25 @@ TEMPLATES = [
 WSGI_APPLICATION = 'optimyze.wsgi.application'
 
 
+database_host = env('DATABASE_HOST')
+database_password = env('DATABASE_PASSWORD')
+database_user = env('DATABASE_USER')
+database_port = env('DATABASE_PORT')
+database = env('DATABASE')
+
 # Database
-# Database - Supabase (PostgreSQL)
 DATABASES = {
-    'default': dj_database_url.config(
-        default=env('DATABASE_URL'),
-        conn_max_age=600,
-        ssl_require=not DEBUG,
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'HOST': database_host,
+        'NAME': database,
+        'USER': database_user,
+        'PORT': database_port,
+        'PASSWORD': database_password,
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
+    }
 }
 
 
