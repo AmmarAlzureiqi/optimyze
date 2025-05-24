@@ -4,7 +4,7 @@ provider "aws" {
 
 # S3 bucket for document storage
 resource "aws_s3_bucket" "document_storage" {
-  bucket = "${var.project_name}-${var.environment}-documents"
+  bucket = "${var.project_name}-${var.environment}-documents-${random_id.bucket_suffix.hex}"
   
   tags = {
     Name        = "${var.project_name}-${var.environment}-documents"
@@ -13,10 +13,20 @@ resource "aws_s3_bucket" "document_storage" {
   }
 }
 
-# Make the bucket private
-resource "aws_s3_bucket_acl" "document_storage_acl" {
+resource "aws_s3_bucket_ownership_controls" "document_storage_ownership" {
   bucket = aws_s3_bucket.document_storage.id
-  acl    = "private"
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+resource "aws_s3_bucket_public_access_block" "document_storage_access_block" {
+  bucket = aws_s3_bucket.document_storage.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 # Enable versioning for document history
