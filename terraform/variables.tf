@@ -1,36 +1,28 @@
 # variables.tf
 variable "aws_region" {
-  description = "AWS region to deploy resources"
+  description = "AWS region for resources"
   type        = string
-  default     = "ca-central-1"  # Canada (Central)
+  default     = "ca-central-1"
 }
 
-variable "environment" {
-  description = "Environment name"
+variable "public_key" {
+  description = "Public SSH key for EC2 access"
   type        = string
-  default     = "production"
 }
 
-variable "public_key_path" {
-  description = "Path to the public key for EC2 access"
+variable "supabase_url" {
+  description = "Supabase project URL"
   type        = string
-  default     = "~/.ssh/id_rsa.pub"
 }
 
-variable "supabase_connection_string" {
-  description = "Supabase PostgreSQL connection string"
+variable "supabase_key" {
+  description = "Supabase service role key"
   type        = string
   sensitive   = true
 }
 
-variable "airflow_fernet_key" {
-  description = "Airflow Fernet key for encryption"
+variable "domain_name" {
+  description = "Domain name for SSL certificate (optional)"
   type        = string
-  sensitive   = true
-}
-
-variable "airflow_secret_key" {
-  description = "Airflow webserver secret key"
-  type        = string
-  sensitive   = true
+  default     = ""
 }

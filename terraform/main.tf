@@ -18,49 +18,117 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-data "aws_ami" "amazon_linux" {
+data "aws_ami" "ubuntu" {
   most_recent = true
-  owners      = ["amazon"]
-  
+  owners      = ["099720109477"] # Canonical
+
   filter {
     name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
   }
 }
 
-# Security Group
+# VPC
+resource "aws_vpc" "optimyze_vpc" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name = "optimyze-vpc"
+  }
+}
+
+# Internet Gateway
+resource "aws_internet_gateway" "optimyze_igw" {
+  vpc_id = aws_vpc.optimyze_vpc.id
+
+  tags = {
+    Name = "optimyze-igw"
+  }
+}
+
+# Public Subnet
+resource "aws_subnet" "public_subnet" {
+  vpc_id                  = aws_vpc.optimyze_vpc.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[0]
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "optimyze-public-subnet"
+  }
+}
+
+# Route Table
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.optimyze_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.optimyze_igw.id
+  }
+
+  tags = {
+    Name = "optimyze-public-rt"
+  }
+}
+
+# Route Table Association
+resource "aws_route_table_association" "public_rta" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public_rt.id
+}
+
+# Security Group for Airflow
 resource "aws_security_group" "airflow_sg" {
-  name_prefix = "airflow-elasticsearch-"
-  description = "Security group for Airflow and Elasticsearch"
+  name        = "optimyze-airflow-sg"
+  description = "Security group for Airflow EC2 instance"
+  vpc_id      = aws_vpc.optimyze_vpc.id
 
-  # Airflow Web UI
   ingress {
-    description = "Airflow Web UI"
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Restrict this to your IP in production
-  }
-
-  # Elasticsearch API
-  ingress {
-    description = "Elasticsearch API"
-    from_port   = 9200
-    to_port     = 9200
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Restrict this in production
-  }
-
-  # SSH
-  ingress {
-    description = "SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Restrict this to your IP
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # All outbound traffic
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -69,58 +137,150 @@ resource "aws_security_group" "airflow_sg" {
   }
 
   tags = {
-    Name = "airflow-elasticsearch-sg"
+    Name = "optimyze-airflow-sg"
   }
 }
 
-# Key Pair (you'll need to create this manually or provide existing one)
-resource "aws_key_pair" "airflow_key" {
-  key_name   = "airflow-key"
-  public_key = file(var.public_key_path)
-}
+# Security Group for OpenSearch
+resource "aws_security_group" "opensearch_sg" {
+  name        = "optimyze-opensearch-sg"
+  description = "Security group for OpenSearch"
+  vpc_id      = aws_vpc.optimyze_vpc.id
 
-# EC2 Instance
-resource "aws_instance" "airflow_server" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = "t3.small"
-  key_name              = aws_key_pair.airflow_key.key_name
-  vpc_security_group_ids = [aws_security_group.airflow_sg.id]
-  
-  root_block_device {
-    volume_size = 30  # 30GB storage
-    volume_type = "gp3"
-    encrypted   = true
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.airflow_sg.id]
   }
 
-  user_data = templatefile("${path.module}/setup.sh", {
-    supabase_connection_string = var.supabase_connection_string
-    airflow_fernet_key        = var.airflow_fernet_key
-    airflow_secret_key        = var.airflow_secret_key
-  })
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
 
   tags = {
-    Name        = "airflow-elasticsearch-server"
-    Environment = var.environment
+    Name = "optimyze-opensearch-sg"
+  }
+}
+
+# Key Pair
+resource "aws_key_pair" "optimyze_key" {
+  key_name   = "optimyze-key"
+  public_key = var.public_key
+}
+
+# EC2 Instance for Airflow
+resource "aws_instance" "airflow_instance" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t3.small"
+  key_name      = aws_key_pair.optimyze_key.key_name
+
+  vpc_security_group_ids = [aws_security_group.airflow_sg.id]
+  subnet_id              = aws_subnet.public_subnet.id
+
+  user_data = base64encode(templatefile("${path.module}/user_data.sh", {
+    supabase_url    = var.supabase_url
+    supabase_key    = var.supabase_key
+    opensearch_url  = aws_opensearch_domain.optimyze_search.endpoint
+  }))
+
+  tags = {
+    Name = "optimyze-airflow"
   }
 }
 
 # Elastic IP
-resource "aws_eip" "airflow_ip" {
-  instance = aws_instance.airflow_server.id
+resource "aws_eip" "airflow_eip" {
+  instance = aws_instance.airflow_instance.id
   domain   = "vpc"
 
   tags = {
-    Name = "airflow-elasticsearch-eip"
+    Name = "optimyze-airflow-eip"
   }
 }
 
-# CloudWatch Log Group
-resource "aws_cloudwatch_log_group" "airflow_logs" {
-  name              = "/aws/ec2/airflow"
-  retention_in_days = 7
+# OpenSearch Domain
+resource "aws_opensearch_domain" "optimyze_search" {
+  domain_name    = "optimyze-search"
+  engine_version = "OpenSearch_2.11"
+
+  cluster_config {
+    instance_type  = "t3.small.search"
+    instance_count = 1
+  }
+
+  ebs_options {
+    ebs_enabled = true
+    volume_type = "gp3"
+    volume_size = 20
+  }
+
+  vpc_options {
+    security_group_ids = [aws_security_group.opensearch_sg.id]
+    subnet_ids         = [aws_subnet.public_subnet.id]
+  }
+
+  access_policies = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "es:*"
+        Principal = "*"
+        Effect = "Allow"
+        Resource = "arn:aws:es:${var.aws_region}:*:domain/optimyze-search/*"
+      }
+    ]
+  })
 
   tags = {
-    Environment = var.environment
-    Application = "airflow"
+    Domain = "optimyze-search"
   }
+}
+
+# IAM Role for EC2 to access OpenSearch
+resource "aws_iam_role" "airflow_role" {
+  name = "optimyze-airflow-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy" "airflow_policy" {
+  name = "optimyze-airflow-policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "es:*"
+        ]
+        Resource = aws_opensearch_domain.optimyze_search.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "airflow_policy_attachment" {
+  role       = aws_iam_role.airflow_role.name
+  policy_arn = aws_iam_policy.airflow_policy.arn
+}
+
+resource "aws_iam_instance_profile" "airflow_profile" {
+  name = "optimyze-airflow-profile"
+  role = aws_iam_role.airflow_role.name
 }

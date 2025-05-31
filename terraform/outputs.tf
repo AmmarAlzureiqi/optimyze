@@ -1,25 +1,30 @@
 # outputs.tf
-output "airflow_public_ip" {
-  description = "Public IP address of the Airflow server"
-  value       = aws_eip.airflow_ip.public_ip
+output "airflow_url" {
+  description = "Airflow UI URL"
+  value       = "http://${aws_eip.airflow_eip.public_ip}:8080"
 }
 
-output "airflow_web_url" {
-  description = "URL to access Airflow web interface"
-  value       = "http://${aws_eip.airflow_ip.public_ip}:8080"
+output "airflow_https_url" {
+  description = "Airflow HTTPS URL (if SSL configured)"
+  value       = "https://${aws_eip.airflow_eip.public_ip}"
 }
 
-output "elasticsearch_url" {
-  description = "URL to access Elasticsearch"
-  value       = "http://${aws_eip.airflow_ip.public_ip}:9200"
+output "ec2_public_ip" {
+  description = "EC2 instance public IP"
+  value       = aws_eip.airflow_eip.public_ip
+}
+
+output "opensearch_endpoint" {
+  description = "OpenSearch domain endpoint"
+  value       = aws_opensearch_domain.optimyze_search.endpoint
+}
+
+output "opensearch_dashboard_url" {
+  description = "OpenSearch Dashboards URL"
+  value       = "https://${aws_opensearch_domain.optimyze_search.dashboard_endpoint}"
 }
 
 output "ssh_command" {
-  description = "SSH command to connect to the server"
-  value       = "ssh -i ~/.ssh/id_rsa ec2-user@${aws_eip.airflow_ip.public_ip}"
-}
-
-output "instance_id" {
-  description = "EC2 instance ID"
-  value       = aws_instance.airflow_server.id
+  description = "SSH command to connect to the instance"
+  value       = "ssh -i ~/.ssh/optimyze-key ubuntu@${aws_eip.airflow_eip.public_ip}"
 }
