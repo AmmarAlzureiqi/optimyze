@@ -1,50 +1,36 @@
-variable "region" {
-  description = "AWS region"
-  default     = "us-east-1"
-}
-
-variable "project_name" {
-  description = "Project name"
-  default     = "optimyze"
+# variables.tf
+variable "aws_region" {
+  description = "AWS region to deploy resources"
+  type        = string
+  default     = "ca-central-1"  # Canada (Central)
 }
 
 variable "environment" {
-  description = "Environment (dev, prod)"
-  default     = "dev"
+  description = "Environment name"
+  type        = string
+  default     = "production"
 }
 
-variable "opensearch_instance_type" {
-  description = "OpenSearch instance type"
-  default     = "t3.small.search"
+variable "public_key_path" {
+  description = "Path to the public key for EC2 access"
+  type        = string
+  default     = "~/.ssh/id_rsa.pub"
 }
 
-variable "opensearch_master_user" {
-  description = "OpenSearch master user"
-  default     = "admin"
-}
-
-variable "opensearch_master_password" {
-  description = "OpenSearch master password"
+variable "supabase_connection_string" {
+  description = "Supabase PostgreSQL connection string"
+  type        = string
   sensitive   = true
 }
 
-variable "allowed_origins" {
-  description = "Allowed origins for CORS"
-  type        = list(string)
-  default     = ["http://localhost:3000"]
-}
-
-# Add these to your existing variables.tf file
-variable "database_url" {
-  description = "Database connection URL (Supabase)"
+variable "airflow_fernet_key" {
+  description = "Airflow Fernet key for encryption"
+  type        = string
   sensitive   = true
 }
 
-variable "supabase_url" {
-  description = "Supabase URL"
-}
-
-variable "supabase_key" {
-  description = "Supabase API key"
+variable "airflow_secret_key" {
+  description = "Airflow webserver secret key"
+  type        = string
   sensitive   = true
 }

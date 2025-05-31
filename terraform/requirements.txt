@@ -1,0 +1,9 @@
+--constraint constraints.txt
+apache-airflow==2.10.3
+apache-airflow-providers-amazon==9.0.0
+numpy==1.26.3
+pandas==2.1.4
+requests==2.32.3
+supabase==2.15.2
+postgrest==1.0.2
+python-jobspy==1.1.80

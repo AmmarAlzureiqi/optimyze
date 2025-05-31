@@ -16,6 +16,7 @@ venv/
 # Terraform
 # Local .terraform directories
 **/.terraform/*
+terraform/dag_tests/
 
 # .tfstate files
 *.tfstate

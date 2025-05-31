@@ -1,240 +1,369 @@
 from datetime import datetime, timedelta
 import json
-import psycopg2
-import psycopg2.extras
 import re
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.secrets_manager import SecretsManagerHook
+from supabase import create_client, Client
 
-def get_database_connection():
-    """Get database credentials from Secrets Manager and create connection"""
+def get_supabase_client():
+    """Get Supabase client using credentials from AWS Secrets Manager"""
     secrets_hook = SecretsManagerHook(aws_conn_id='aws_default')
-    secret = secrets_hook.get_secret('optimyze-dev-supabase-credentials')
+    secret = secrets_hook.get_secret('optimyze-dev-supabase-credentials-8df5242f')
     credentials = json.loads(secret)
     
-    conn = psycopg2.connect(credentials['database_url'])
-    return conn
+    supabase_url = credentials.get('supabase_url')
+    supabase_key = credentials.get('supabase_key')
+    
+    if not supabase_url or not supabase_key:
+        raise ValueError("Missing supabase_url or supabase_key in secrets")
+    
+    supabase: Client = create_client(supabase_url, supabase_key)
+    return supabase
 
 def extract_skills_from_description(description):
     """Extract skills from job description using simple keyword matching"""
-    # Common tech skills - expand this list as needed
+    # Expanded tech skills list
     tech_skills = [
-        'python', 'javascript', 'java', 'react', 'node.js', 'django', 'flask',
-        'sql', 'postgresql', 'mysql', 'mongodb', 'redis', 'docker', 'kubernetes',
-        'aws', 'azure', 'gcp', 'terraform', 'git', 'jenkins', 'airflow',
-        'machine learning', 'data science', 'pandas', 'numpy', 'tensorflow',
-        'pytorch', 'scikit-learn', 'html', 'css', 'typescript', 'vue.js',
-        'angular', 'express.js', 'spring', 'hibernate', 'rest api', 'graphql'
+        # Programming languages
+        'python', 'javascript', 'java', 'typescript', 'c++', 'c#', 'go', 'rust', 'kotlin', 'swift',
+        'php', 'ruby', 'scala', 'r', 'matlab', 'shell', 'bash', 'powershell',
+        
+        # Frontend frameworks/libraries
+        'react', 'vue.js', 'angular', 'svelte', 'jquery', 'bootstrap', 'tailwind', 'sass', 'less',
+        
+        # Backend frameworks
+        'node.js', 'express.js', 'django', 'flask', 'fastapi', 'spring', 'spring boot', 'laravel',
+        'rails', 'asp.net', 'gin', 'fiber',
+        
+        # Databases
+        'sql', 'postgresql', 'mysql', 'mongodb', 'redis', 'elasticsearch', 'cassandra', 'dynamodb',
+        'sqlite', 'oracle', 'sql server', 'mariadb', 'neo4j',
+        
+        # Cloud platforms
+        'aws', 'azure', 'gcp', 'google cloud', 'digital ocean', 'heroku', 'vercel', 'netlify',
+        
+        # DevOps/Infrastructure
+        'docker', 'kubernetes', 'terraform', 'ansible', 'jenkins', 'gitlab ci', 'github actions',
+        'circleci', 'travis ci', 'nginx', 'apache', 'linux', 'unix',
+        
+        # Version control
+        'git', 'github', 'gitlab', 'bitbucket', 'svn',
+        
+        # Data science/ML
+        'machine learning', 'deep learning', 'data science', 'pandas', 'numpy', 'tensorflow',
+        'pytorch', 'scikit-learn', 'keras', 'opencv', 'matplotlib', 'seaborn', 'jupyter',
+        
+        # Other tools/technologies
+        'rest api', 'graphql', 'microservices', 'agile', 'scrum', 'jira', 'confluence',
+        'slack', 'figma', 'adobe', 'photoshop', 'sketch', 'airflow', 'kafka', 'rabbitmq',
+        
+        # Web technologies
+        'html', 'css', 'json', 'xml', 'websockets', 'oauth', 'jwt', 'grpc'
     ]
     
     found_skills = []
     description_lower = description.lower()
     
     for skill in tech_skills:
-        if skill.lower() in description_lower:
+        # Use word boundaries to avoid partial matches
+        pattern = r'\b' + re.escape(skill.lower()) + r'\b'
+        if re.search(pattern, description_lower):
             found_skills.append(skill)
     
-    return found_skills
+    return list(set(found_skills))  # Remove duplicates
 
 def process_unprocessed_jobs():
-    """Process jobs that haven't been processed yet"""
-    conn = get_database_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    """Process jobs that haven't been processed yet using Supabase"""
+    supabase = get_supabase_client()
     
     try:
-        # Get jobs that haven't been processed (no skills extracted)
-        cursor.execute("""
-            SELECT id, description, details 
-            FROM jobs_job 
-            WHERE skills = '[]' OR skills IS NULL
-            LIMIT 1000
-        """)
+        print("🔍 Starting skill extraction process...")
         
-        jobs_to_process = cursor.fetchall()
+        # Get jobs that haven't been processed (empty skills array)
+        result = supabase.table('jobs_job').select('id, description, details').eq('skills', '[]').limit(1000).execute()
+        
+        jobs_to_process = result.data
         processed_count = 0
+        batch_size = 50
         
-        for job in jobs_to_process:
-            job_id = job['id']
-            description = job['description'] or ''
-            
-            # Extract skills
-            extracted_skills = extract_skills_from_description(description)
-            
-            # Update job with extracted skills
-            cursor.execute(
-                "UPDATE jobs_job SET skills = %s WHERE id = %s",
-                (json.dumps(extracted_skills), job_id)
-            )
-            
-            processed_count += 1
-            
-            # Commit every 100 jobs
-            if processed_count % 100 == 0:
-                conn.commit()
-                print(f"Processed {processed_count} jobs...")
+        print(f"📊 Found {len(jobs_to_process)} jobs to process")
         
-        conn.commit()
-        print(f"Skill extraction completed. Processed {processed_count} jobs.")
+        # Process in batches
+        for i in range(0, len(jobs_to_process), batch_size):
+            batch = jobs_to_process[i:i + batch_size]
+            
+            for job in batch:
+                try:
+                    job_id = job['id']
+                    description = job.get('description', '') or ''
+                    
+                    # Extract skills
+                    extracted_skills = extract_skills_from_description(description)
+                    
+                    # Update job with extracted skills
+                    supabase.table('jobs_job').update({
+                        'skills': extracted_skills,
+                        'updated_at': datetime.now().isoformat()
+                    }).eq('id', job_id).execute()
+                    
+                    processed_count += 1
+                    
+                    if extracted_skills:
+                        print(f"  ✅ Job {job_id}: Found {len(extracted_skills)} skills")
+                    
+                except Exception as job_error:
+                    print(f"  ❌ Error processing job {job.get('id', 'unknown')}: {job_error}")
+                    continue
+            
+            print(f"📈 Processed batch {i//batch_size + 1}, total: {processed_count} jobs")
+        
+        print(f"🎉 Skill extraction completed. Processed {processed_count} jobs.")
         
     except Exception as e:
-        print(f"Error in skill extraction: {str(e)}")
+        print(f"❌ Error in skill extraction: {str(e)}")
         raise
-    finally:
-        cursor.close()
-        conn.close()
 
 def normalize_salary_data():
-    """Normalize and clean salary data"""
-    conn = get_database_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    """Normalize and clean salary data using Supabase"""
+    supabase = get_supabase_client()
     
     try:
-        # Get jobs with salary range but no min/max values
-        cursor.execute("""
-            SELECT id, salary_range 
-            FROM jobs_job 
-            WHERE salary_range IS NOT NULL 
-            AND salary_range != '' 
-            AND (salary_min IS NULL OR salary_max IS NULL)
-            LIMIT 1000
-        """)
+        print("💰 Starting salary normalization process...")
         
-        jobs_to_process = cursor.fetchall()
+        # Get jobs with salary range but no min/max values
+        result = supabase.table('jobs_job').select('id, salary_range').neq('salary_range', '').neq('salary_range', 'Not specified').is_('salary_min', 'null').limit(1000).execute()
+        
+        jobs_to_process = result.data
         processed_count = 0
         
-        for job in jobs_to_process:
-            job_id = job['id']
-            salary_range = job['salary_range']
-            
-            # Try to extract salary numbers from salary_range
-            salary_min, salary_max = parse_salary_range(salary_range)
-            
-            if salary_min or salary_max:
-                cursor.execute(
-                    "UPDATE jobs_job SET salary_min = %s, salary_max = %s WHERE id = %s",
-                    (salary_min, salary_max, job_id)
-                )
-                processed_count += 1
+        print(f"📊 Found {len(jobs_to_process)} jobs to normalize")
         
-        conn.commit()
-        print(f"Salary normalization completed. Processed {processed_count} jobs.")
+        for job in jobs_to_process:
+            try:
+                job_id = job['id']
+                salary_range = job.get('salary_range', '')
+                
+                if not salary_range or salary_range == 'Not specified':
+                    continue
+                
+                # Try to extract salary numbers from salary_range
+                salary_min, salary_max = parse_salary_range(salary_range)
+                
+                if salary_min or salary_max:
+                    supabase.table('jobs_job').update({
+                        'salary_min': salary_min,
+                        'salary_max': salary_max,
+                        'updated_at': datetime.now().isoformat()
+                    }).eq('id', job_id).execute()
+                    
+                    processed_count += 1
+                    print(f"  ✅ Job {job_id}: ${salary_min:,.0f} - ${salary_max:,.0f}")
+                
+            except Exception as job_error:
+                print(f"  ❌ Error processing job {job.get('id', 'unknown')}: {job_error}")
+                continue
+        
+        print(f"🎉 Salary normalization completed. Processed {processed_count} jobs.")
         
     except Exception as e:
-        print(f"Error in salary normalization: {str(e)}")
+        print(f"❌ Error in salary normalization: {str(e)}")
         raise
-    finally:
-        cursor.close()
-        conn.close()
 
 def parse_salary_range(salary_range):
     """Parse salary range string to extract min and max values"""
     if not salary_range:
         return None, None
     
-    # Remove common currency symbols and words
-    clean_range = re.sub(r'[,$]', '', salary_range.lower())
-    clean_range = re.sub(r'\b(per|year|annual|yearly|hour|hourly|k|thousand)\b', '', clean_range)
+    # Clean the salary range string
+    clean_range = salary_range.lower().strip()
     
-    # Find numbers
-    numbers = re.findall(r'\d+\.?\d*', clean_range)
+    # Remove common words and symbols
+    clean_range = re.sub(r'[,$]', '', clean_range)
+    clean_range = re.sub(r'\b(per|year|annual|yearly|hour|hourly|month|monthly|week|weekly)\b', '', clean_range)
+    clean_range = re.sub(r'\b(usd|dollars|euro|eur)\b', '', clean_range)
     
-    if len(numbers) >= 2:
-        try:
-            min_val = float(numbers[0])
-            max_val = float(numbers[1])
-            
-            # Handle 'k' notation (e.g., "80k-120k")
-            if 'k' in salary_range.lower():
-                min_val *= 1000
-                max_val *= 1000
-            
-            return min_val, max_val
-        except ValueError:
-            return None, None
-    elif len(numbers) == 1:
-        try:
-            val = float(numbers[0])
-            if 'k' in salary_range.lower():
-                val *= 1000
-            return val, val
-        except ValueError:
-            return None, None
+    # Handle different patterns
+    patterns = [
+        # Range patterns: "80k-120k", "80000-120000", "80 - 120"
+        r'(\d+\.?\d*)\s*k?\s*[-–—to]\s*(\d+\.?\d*)\s*k?',
+        # Up to patterns: "up to 120k"
+        r'up\s+to\s+(\d+\.?\d*)\s*k?',
+        # From patterns: "from 80k"
+        r'from\s+(\d+\.?\d*)\s*k?',
+        # Single number with k: "100k"
+        r'(\d+\.?\d*)\s*k\b',
+        # Plain numbers: "100000"
+        r'(\d{5,})'
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, clean_range)
+        if match:
+            try:
+                if len(match.groups()) == 2:  # Range pattern
+                    min_val = float(match.group(1))
+                    max_val = float(match.group(2))
+                    
+                    # Handle 'k' notation
+                    if 'k' in salary_range.lower():
+                        min_val *= 1000
+                        max_val *= 1000
+                    
+                    return min_val, max_val
+                    
+                else:  # Single value pattern
+                    val = float(match.group(1))
+                    
+                    # Handle 'k' notation
+                    if 'k' in salary_range.lower() or val < 1000:
+                        val *= 1000
+                    
+                    # For "up to" patterns, set min to None
+                    if 'up to' in clean_range:
+                        return None, val
+                    # For "from" patterns, set max to None  
+                    elif 'from' in clean_range:
+                        return val, None
+                    # For single values, use as both min and max
+                    else:
+                        return val, val
+                        
+            except ValueError:
+                continue
     
     return None, None
 
 def update_job_categories():
-    """Automatically categorize jobs based on title and description"""
-    conn = get_database_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    """Automatically categorize jobs based on title and description using Supabase"""
+    supabase = get_supabase_client()
     
     try:
-        # Define category mappings
+        print("🏷️ Starting job categorization process...")
+        
+        # Define category mappings with more comprehensive keywords
         category_keywords = {
-            'Software Engineering': ['software engineer', 'developer', 'programmer', 'coding'],
-            'Data Science': ['data scientist', 'data analyst', 'machine learning', 'ai engineer'],
-            'Product Management': ['product manager', 'product owner', 'pm '],
-            'Design': ['designer', 'ux', 'ui', 'graphic design'],
-            'DevOps': ['devops', 'site reliability', 'infrastructure', 'platform engineer'],
-            'Sales': ['sales', 'account manager', 'business development'],
-            'Marketing': ['marketing', 'digital marketing', 'content marketing'],
+            'Software Engineering': [
+                'software engineer', 'developer', 'programmer', 'coding', 'full stack', 
+                'backend', 'frontend', 'web developer', 'mobile developer', 'ios developer',
+                'android developer', 'react developer', 'python developer'
+            ],
+            'Data Science': [
+                'data scientist', 'data analyst', 'machine learning', 'ai engineer',
+                'data engineer', 'ml engineer', 'analytics', 'data mining', 'statistician',
+                'business intelligence', 'data visualization'
+            ],
+            'Product Management': [
+                'product manager', 'product owner', 'pm ', 'product lead', 'product director',
+                'product strategy', 'product marketing'
+            ],
+            'Design': [
+                'designer', 'ux', 'ui', 'graphic design', 'visual design', 'product design',
+                'user experience', 'user interface', 'creative director', 'art director'
+            ],
+            'DevOps': [
+                'devops', 'site reliability', 'infrastructure', 'platform engineer',
+                'cloud engineer', 'systems engineer', 'sre', 'deployment', 'ci/cd'
+            ],
+            'Sales': [
+                'sales', 'account manager', 'business development', 'sales representative',
+                'account executive', 'sales engineer', 'sales director'
+            ],
+            'Marketing': [
+                'marketing', 'digital marketing', 'content marketing', 'marketing manager',
+                'growth marketing', 'performance marketing', 'brand marketing'
+            ],
+            'Quality Assurance': [
+                'qa', 'quality assurance', 'test engineer', 'qa engineer', 'testing',
+                'automation testing', 'manual testing'
+            ],
+            'Security': [
+                'security', 'cybersecurity', 'information security', 'security engineer',
+                'penetration testing', 'security analyst'
+            ]
         }
         
         # Get or create categories
         category_ids = {}
         for category_name in category_keywords.keys():
-            cursor.execute(
-                "INSERT INTO jobs_jobcategory (name) VALUES (%s) ON CONFLICT (name) DO NOTHING RETURNING id",
-                (category_name,)
-            )
-            result = cursor.fetchone()
-            if result:
-                category_ids[category_name] = result['id']
-            else:
-                cursor.execute("SELECT id FROM jobs_jobcategory WHERE name = %s", (category_name,))
-                category_ids[category_name] = cursor.fetchone()['id']
+            try:
+                # Try to get existing category
+                result = supabase.table('jobs_jobcategory').select('id').eq('name', category_name).execute()
+                
+                if result.data:
+                    category_ids[category_name] = result.data[0]['id']
+                else:
+                    # Create new category
+                    result = supabase.table('jobs_jobcategory').insert({'name': category_name}).execute()
+                    category_ids[category_name] = result.data[0]['id']
+                    
+            except Exception as e:
+                print(f"  ⚠️ Error handling category {category_name}: {e}")
+                continue
         
-        # Get jobs without categories
-        cursor.execute("""
-            SELECT j.id, j.title, j.description 
-            FROM jobs_job j
-            LEFT JOIN jobs_job_categories jc ON j.id = jc.job_id
-            WHERE jc.job_id IS NULL
-            LIMIT 1000
-        """)
+        print(f"📋 Found/created {len(category_ids)} categories")
         
-        jobs_to_categorize = cursor.fetchall()
+        # Get jobs without categories (using a simpler approach)
+        # First get all jobs, then filter those without categories
+        all_jobs_result = supabase.table('jobs_job').select('id, title, description').limit(1000).execute()
+        all_jobs = all_jobs_result.data
+        
+        # Get jobs that already have categories
+        categorized_jobs_result = supabase.table('jobs_job_categories').select('job_id').execute()
+        categorized_job_ids = {row['job_id'] for row in categorized_jobs_result.data}
+        
+        # Filter to get uncategorized jobs
+        jobs_to_categorize = [job for job in all_jobs if job['id'] not in categorized_job_ids]
+        
+        print(f"📊 Found {len(jobs_to_categorize)} jobs to categorize")
+        
         categorized_count = 0
         
         for job in jobs_to_categorize:
-            job_id = job['id']
-            title = (job['title'] or '').lower()
-            description = (job['description'] or '').lower()
-            job_text = f"{title} {description}"
-            
-            # Find matching categories
-            for category_name, keywords in category_keywords.items():
-                if any(keyword in job_text for keyword in keywords):
-                    cursor.execute(
-                        "INSERT INTO jobs_job_categories (job_id, jobcategory_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                        (job_id, category_ids[category_name])
-                    )
-                    categorized_count += 1
-                    break  # Only assign one category for simplicity
+            try:
+                job_id = job['id']
+                title = (job.get('title', '') or '').lower()
+                description = (job.get('description', '') or '').lower()
+                job_text = f"{title} {description}"
+                
+                # Find matching categories
+                matched_categories = []
+                for category_name, keywords in category_keywords.items():
+                    if category_name in category_ids:
+                        # Use word boundaries for better matching
+                        for keyword in keywords:
+                            pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
+                            if re.search(pattern, job_text):
+                                matched_categories.append(category_name)
+                                break
+                
+                # Insert category relationships
+                for category_name in matched_categories[:2]:  # Limit to 2 categories max
+                    try:
+                        supabase.table('jobs_job_categories').insert({
+                            'job_id': job_id,
+                            'jobcategory_id': category_ids[category_name]
+                        }).execute()
+                        categorized_count += 1
+                        print(f"  ✅ Job {job_id}: Categorized as {category_name}")
+                    except Exception as insert_error:
+                        # Handle duplicate key errors gracefully
+                        if 'duplicate key' not in str(insert_error).lower():
+                            print(f"  ⚠️ Error categorizing job {job_id}: {insert_error}")
+                
+            except Exception as job_error:
+                print(f"  ❌ Error processing job {job.get('id', 'unknown')}: {job_error}")
+                continue
         
-        conn.commit()
-        print(f"Job categorization completed. Categorized {categorized_count} jobs.")
+        print(f"🎉 Job categorization completed. Categorized {categorized_count} jobs.")
         
     except Exception as e:
-        print(f"Error in job categorization: {str(e)}")
+        print(f"❌ Error in job categorization: {str(e)}")
         raise
-    finally:
-        cursor.close()
-        conn.close()
 
 # Job Processing DAG
 with DAG(
-    'job_processing_dag',
+    'job_processing_supabase_dag',
     default_args={
         'owner': 'airflow',
         'depends_on_past': False,
@@ -243,11 +372,11 @@ with DAG(
         'retries': 2,
         'retry_delay': timedelta(minutes=5),
     },
-    description='Process and enrich job data',
+    description='Process and enrich job data using Supabase',
     schedule_interval='0 6 * * *',  # Run at 6 AM daily, after scraping
     start_date=datetime(2025, 5, 22),
     catchup=False,
-    tags=['jobs', 'processing'],
+    tags=['jobs', 'processing', 'supabase'],
 ) as dag:
     
     # Extract skills from job descriptions
