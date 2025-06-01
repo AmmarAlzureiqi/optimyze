@@ -181,7 +181,7 @@ resource "aws_instance" "airflow_instance" {
   vpc_security_group_ids = [aws_security_group.airflow_sg.id]
   subnet_id              = aws_subnet.public_subnet.id
 
-  user_data = base64encode(templatefile("${path.module}/user_data.sh", {
+  user_data = base64encode(templatefile("${path.module}/../scripts/user_data.sh", {
     supabase_url    = var.supabase_url
     supabase_key    = var.supabase_key
     opensearch_url  = aws_opensearch_domain.optimyze_search.endpoint
