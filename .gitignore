@@ -17,6 +17,11 @@ venv/
 # Local .terraform directories
 **/.terraform/*
 terraform/dag_tests/
+terraform/scripts/
+terraform/deploy_dag.sh
+terraform/setup.sh
+terraform/user_data.sh
+terraform/troubleshoot.sh
 
 # .tfstate files
 *.tfstate

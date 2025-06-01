@@ -7,6 +7,8 @@ import Profile from './pages/Profile';
 import ResumeBuilder from './pages/ResumeBuilder';
 import JobTracker from './pages/JobTracker';
 import Analytics from './pages/Analytics';
+import UnderDevelopment from './components/UnderDevelopment'
+
 export function App() {
   return <BrowserRouter>
       <Routes>
@@ -14,9 +16,12 @@ export function App() {
           <Route index element={<Dashboard />} />
           <Route path="jobs" element={<JobSearch />} />
           <Route path="profile" element={<Profile />} />
-          <Route path="resume-builder" element={<ResumeBuilder />} />
-          <Route path="job-tracker" element={<JobTracker />} />
-          <Route path="analytics" element={<Analytics />} />
+          {/* <Route path="resume-builder" element={<ResumeBuilder />} /> */}
+          <Route path="resume-builder" element={<UnderDevelopment />} />
+          {/* <Route path="job-tracker" element={<JobTracker />} /> */}
+          <Route path="job-tracker" element={<UnderDevelopment />} />
+          {/* <Route path="analytics" element={<Analytics />} /> */}
+          <Route path="analytics" element={<UnderDevelopment />} />
         </Route>
       </Routes>
     </BrowserRouter>;
