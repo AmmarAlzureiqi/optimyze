@@ -1,0 +1,31 @@
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and fill in your values
+
+# AWS Configuration
+aws_region = "ca-central-1"
+
+# SSH Key (paste your public key here)
+public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAA... your-public-key-here"
+
+# Supabase Configuration
+supabase_url = "https://your-project-id.supabase.co"
+supabase_key = "your-supabase-service-role-key-here"
+
+# Airflow Configuration
+airflow_instance_type   = "t3.medium"  # 2 vCPU, 4GB RAM - adjust as needed
+airflow_admin_user     = "admin"
+airflow_admin_password = "your-secure-airflow-password"
+airflow_admin_email    = "admin@yourdomain.com"
+
+# Django Configuration
+django_bundle_id   = "small_2_0"  # $10/month Lightsail instance
+django_secret_key  = "your-super-secret-django-key-generate-a-long-random-string"
+allowed_hosts      = "localhost,127.0.0.1,your-frontend-domain.netlify.app"
+
+# Repository Configuration (optional - for auto-deployment)
+github_repo   = "https://github.com/yourusername/your-repo.git"
+github_branch = "main"
+deploy_key    = ""  # Leave empty for HTTPS clone, or add your private key for SSH
+
+# Domain Configuration (optional)
+domain_name = "yourdomain.com"
