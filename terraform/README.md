@@ -1,256 +1,269 @@
-# Optimyze ETL Infrastructure
+# Optimyze Infrastructure Setup
 
-A cost-effective Airflow ETL pipeline for scraping jobs from LinkedIn and Indeed, processing them, and storing in Supabase with OpenSearch indexing.
+This Terraform configuration deploys a complete job search and aggregation platform infrastructure on AWS, including:
 
-## Architecture
-
-- **EC2 t3.small**: Hosts Airflow (scheduler + webserver)
-- **OpenSearch t3.small.search**: Search and analytics engine
-- **Supabase**: PostgreSQL database for job storage
-- **JobSpy**: Python library for job scraping
-- **Region**: Canada Central (ca-central-1)
-
-## Estimated Monthly Cost
-
-- EC2 t3.small: ~$20-25 CAD
-- OpenSearch t3.small.search: ~$25-30 CAD
-- Data transfer: ~$5-10 CAD
-- **Total: ~$50-65 CAD/month**
+- **Airflow on EC2**: For job scraping and data processing workflows
+- **Django on Lightsail**: For the backend API
+- **Supabase**: For database (external service)
+- **Frontend**: Hosted on Netlify (separate deployment)
 
 ## Prerequisites
 
-1. **AWS Account** with CLI configured
-2. **Terraform** installed
-3. **Supabase Project** with your Django models deployed
-4. **SSH Key Pair** (will be generated if needed)
+1. **AWS CLI** configured with appropriate credentials
+2. **Terraform** installed (>= 1.0)
+3. **SSH key pair** generated
+4. **Supabase project** set up with database
+5. **GitHub repository** (optional, for automatic deployment)
+
+## ⚠️ IMPORTANT: User Data Size Limit Fix
+
+The original setup scripts were too large for AWS EC2 user_data (16KB limit). The solution uses lightweight bootstrap scripts that download and run the full setup scripts to avoid this limitation.
+
+## Updated Files Structure
+
+```
+scripts/
+├── airflow_bootstrap.sh    # Lightweight Airflow bootstrap
+├── django_bootstrap.sh     # Lightweight Django bootstrap
+└── cleanup_old_scripts.sh  # Cleanup utility (optional)
+```
 
 ## Quick Start
 
-### 1. Prepare Supabase
-
-Run the SQL seeds in your Supabase SQL editor:
-
-```sql
--- Copy content from supabase_seeds.sql
-```
-
-### 2. Configure Environment
+### 1. Clone and Setup
 
 ```bash
-# Clone/download the Terraform files
-git clone <your-repo> optimyze-etl
-cd optimyze-etl
+# Clone your infrastructure repository
+git clone <your-repo-url>
+cd <your-repo-name>
 
-# Copy and edit the variables file
+# Copy the example variables file
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your Supabase details
 ```
 
-### 3. Deploy Infrastructure
+### 2. Configure Variables
 
-```bash
-# Make setup script executable
-chmod +x setup.sh
-
-# Run the setup (this will guide you through the process)
-./setup.sh
-```
-
-### 4. Deploy the DAG
-
-```bash
-# Make deploy script executable
-chmod +x deploy_dag.sh
-
-# Deploy the job scraper DAG
-./deploy_dag.sh
-```
-
-## Configuration
-
-### terraform.tfvars
+Edit `terraform.tfvars` with your actual values:
 
 ```hcl
+# AWS Configuration
 aws_region = "ca-central-1"
-public_key = "ssh-rsa AAAAB3NzaC1yc2E... your-public-key"
-supabase_url = "https://your-project.supabase.co"
-supabase_key = "your-service-role-key"
-domain_name = "airflow.yourdomain.com"  # Optional
+public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAA... your-public-key-here"
+
+# Supabase Configuration
+supabase_url = "https://your-project-id.supabase.co"
+supabase_key = "your-supabase-service-role-key"
+
+# Airflow Configuration
+airflow_admin_password = "your-secure-password"
+airflow_admin_email = "admin@yourdomain.com"
+
+# Django Configuration
+django_secret_key = "your-super-secret-django-key"
+allowed_hosts = "localhost,127.0.0.1,your-frontend.netlify.app"
+
+# Optional: Auto-deployment from GitHub
+github_repo = "https://github.com/yourusername/your-repo.git"
 ```
 
-### Job Search Configuration
-
-Edit the `JOB_SEARCHES` list in `job_scraper_dag.py` to customize:
-
-```python
-JOB_SEARCHES = [
-    {
-        'site_name': 'linkedin',
-        'search_term': 'software engineer',
-        'location': 'Canada',
-        'results_wanted': 100,
-        'hours_old': 24,
-    },
-    # Add more searches...
-]
-```
-
-## Usage
-
-### Airflow UI
-
-1. Access: `http://your-ec2-ip:8080`
-2. Login: `admin` / `admin123`
-3. Enable the `optimyze_job_scraper` DAG
-4. Monitor runs and logs
-
-### OpenSearch Dashboard
-
-1. Access: `https://your-opensearch-endpoint/_dashboards`
-2. Create visualizations and dashboards for job analytics
-
-### SSH Access
+### 3. Generate Required Keys
 
 ```bash
-ssh -i ~/.ssh/optimyze-key ubuntu@your-ec2-ip
+# Generate SSH key pair if you don't have one
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/optimyze-key
+# Copy the public key content to terraform.tfvars
+
+# Generate Django secret key
+python3 -c "import secrets; print(secrets.token_urlsafe(50))"
 ```
 
-## DAG Details
+### 4. Deploy Infrastructure
 
-### Schedule
-- Runs twice daily: 6 AM and 6 PM EST
-- Can be triggered manually from Airflow UI
-
-### Tasks
-1. **scrape_jobs**: Scrapes jobs from configured sources
-2. **process_jobs**: Deduplicates and processes job data
-3. **store_in_supabase**: Stores jobs in PostgreSQL
-4. **index_in_opensearch**: Indexes jobs for search
-5. **log_scraper_run**: Logs run statistics
-
-### Deduplication
-- Uses combination of site + job_url as external_id
-- Checks existing jobs in Supabase to avoid duplicates
-- Processes ~200-400 jobs per run (varies by market conditions)
-
-## Monitoring
-
-### Service Status
 ```bash
-# SSH into EC2 instance
-ssh -i ~/.ssh/optimyze-key ubuntu@your-ec2-ip
+# Initialize Terraform
+terraform init
 
-# Check all services
-sudo /home/airflow/check_services.sh
+# Plan the deployment
+terraform plan
 
-# Check specific services
-sudo systemctl status airflow-scheduler
-sudo systemctl status airflow-webserver
-sudo systemctl status nginx
+# Apply the configuration
+terraform apply
 ```
+
+### 5. Access Your Services
+
+After deployment, Terraform will output the access information:
+
+```bash
+# Airflow UI
+terraform output airflow_url
+# Visit: http://YOUR-AIRFLOW-IP:8080
+# Login with: admin / your-airflow-password
+
+# Django API
+terraform output django_api_url
+# Visit: http://YOUR-DJANGO-IP/health/
+
+# SSH Access
+terraform output airflow_ssh_command
+terraform output django_ssh_command
+```
+
+## Architecture Overview
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Django API    │    │   Supabase      │
+│   (Netlify)     │◄──►│   (Lightsail)   │◄──►│   (Database)    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │
+                                │ API Calls
+                                ▼
+                       ┌─────────────────┐
+                       │   Airflow       │
+                       │   (EC2)         │
+                       └─────────────────┘
+```
+
+## Service Details
+
+### Airflow (EC2)
+- **Instance Type**: t3.medium (2 vCPU, 4GB RAM)
+- **Port**: 8080 (Web UI)
+- **Purpose**: Job scraping, data processing workflows
+- **Location**: `/opt/airflow/`
+
+### Django (Lightsail)
+- **Bundle**: small_2_0 ($10/month - 2GB RAM, 1 vCPU)
+- **Port**: 80 (via Nginx reverse proxy)
+- **Purpose**: REST API for job data
+- **Location**: `/opt/django/app/`
+
+## Post-Deployment Tasks
+
+### 1. Verify Services
+
+```bash
+# Check Airflow
+curl http://$(terraform output -raw airflow_public_ip):8080/health
+
+# Check Django
+curl http://$(terraform output -raw django_public_ip)/health/
+```
+
+### 2. Deploy Your Code
+
+If you didn't set up GitHub auto-deployment:
+
+```bash
+# SSH into Django instance
+ssh -i ~/.ssh/optimyze-django-key ubuntu@$(terraform output -raw django_public_ip)
+
+# Deploy your Django code
+sudo -u django -i
+cd /opt/django/app
+git clone https://github.com/yourusername/your-django-repo.git .
+/opt/django/deploy.sh
+
+# SSH into Airflow instance
+ssh -i ~/.ssh/optimyze-key ubuntu@$(terraform output -raw airflow_public_ip)
+
+# Deploy your DAGs
+sudo -u airflow -i
+cd /opt/airflow/dags
+# Copy your DAG files here
+sudo supervisorctl restart airflow-scheduler
+```
+
+### 3. Configure Domain (Optional)
+
+To use a custom domain:
+
+1. Point your domain's A record to the service IPs
+2. SSH into the instances and run:
+   ```bash
+   sudo certbot --nginx -d yourdomain.com
+   ```
+
+## Monitoring and Maintenance
 
 ### Logs
+
 ```bash
 # Airflow logs
-tail -f /home/airflow/airflow/logs/scheduler/latest/*.log
-tail -f /home/airflow/airflow/logs/dag_id/task_id/*/1.log
+sudo tail -f /var/log/airflow-webserver.log
+sudo tail -f /var/log/airflow-scheduler.log
 
-# System logs
-sudo journalctl -u airflow-scheduler -f
-sudo journalctl -u airflow-webserver -f
+# Django logs
+sudo tail -f /var/log/django.log
+sudo tail -f /var/log/gunicorn-error.log
+
+# Service status
+sudo supervisorctl status
 ```
 
-### Key Metrics
-- Jobs scraped per run
-- Duplicate detection rate
-- Processing time
-- Error rates
+### Updates
+
+```bash
+# Update Django code
+ssh ubuntu@django-ip
+/opt/django/deploy.sh
+
+# Update Airflow DAGs
+ssh ubuntu@airflow-ip
+/opt/airflow/deploy_dags.sh
+```
+
+## Cost Estimation
+
+- **EC2 t3.medium**: ~$30/month
+- **Lightsail small_2_0**: $10/month
+- **EIP**: $3.6/month (when instance is running)
+- **Total**: ~$43-45/month
+
+## Security Notes
+
+- SSH keys are used for instance access
+- Security groups limit access to necessary ports
+- Instances are in a public subnet (consider VPN for production)
+- Update `allowed_hosts` to restrict Django access
+- Consider using SSL certificates for production
 
 ## Troubleshooting
 
-### Common Issues
-
-1. **DAG not appearing**
-   - Check file permissions: `ls -la /home/airflow/airflow/dags/`
-   - Restart scheduler: `sudo systemctl restart airflow-scheduler`
-
-2. **JobSpy errors**
-   - LinkedIn/Indeed may rate limit
-   - Reduce `results_wanted` or increase `hours_old`
-   - Check error logs in Airflow
-
-3. **Supabase connection issues**
-   - Verify URL and key in `/home/airflow/.env`
-   - Check network connectivity
-
-4. **OpenSearch connection issues**
-   - OpenSearch domain takes 10-15 minutes to initialize
-   - Check security group allows traffic
-
-### Performance Tuning
-
-1. **Increase job volume**
-   - Add more search terms
-   - Add more job sites (glassdoor, etc.)
-   - Reduce `hours_old` for more recent jobs
-
-2. **Optimize costs**
-   - Reduce OpenSearch to development instance type
-   - Use spot instances for EC2 (requires additional config)
-   - Implement lifecycle policies for old jobs
-
-## Security
-
-### Production Recommendations
-
-1. **Change default passwords**
-2. **Set up SSL certificates**
-3. **Restrict security group access**
-4. **Use AWS Secrets Manager for sensitive data**
-5. **Enable CloudTrail and monitoring**
-
-### SSL Setup (Optional)
-
+### Airflow not accessible
 ```bash
-# SSH into instance
-sudo certbot --nginx -d your-domain.com
-
-# Update nginx config for HTTPS redirect
+ssh ubuntu@airflow-ip
+sudo supervisorctl status airflow-webserver
+sudo supervisorctl restart airflow-webserver
 ```
 
-## Scaling
+### Django not responding
+```bash
+ssh ubuntu@django-ip
+sudo supervisorctl status django
+sudo nginx -t && sudo systemctl reload nginx
+```
 
-### Horizontal Scaling
-- Add more EC2 instances behind a load balancer
-- Use RDS for Airflow metadata database
-- Consider AWS Managed Airflow (MWAA) for production
+### Instance connection issues
+- Check security groups allow SSH (port 22)
+- Verify your public key is correct in terraform.tfvars
+- Ensure you're using the right SSH key file
 
-### Vertical Scaling
-- Upgrade to t3.medium or larger
-- Increase OpenSearch instance size
-- Add more OpenSearch nodes
+## Cleanup
 
-## Maintenance
+To destroy all resources:
 
-### Regular Tasks
-- Monitor disk usage on EC2
-- Review and archive old jobs
-- Update dependencies monthly
-- Monitor AWS costs
+```bash
+terraform destroy
+```
 
-### Backup Strategy
-- Supabase handles database backups
-- Consider S3 backup for Airflow configurations
-- Document infrastructure changes
+**Warning**: This will delete all data and resources. Make sure to backup any important data first.
 
 ## Support
 
 For issues:
-1. Check Airflow logs first
-2. Verify service status
-3. Check AWS CloudWatch metrics
-4. Review security group settings
-
-## License
-
-MIT License - feel free to modify for your needs.
+1. Check the logs on the respective instances
+2. Verify your terraform.tfvars configuration
+3. Ensure AWS credentials are properly configured
+4. Check security groups and network connectivity

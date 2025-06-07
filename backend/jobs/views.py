@@ -4,9 +4,11 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
+from django.db.models import Case, When
 from datetime import timedelta
 from .models import Job, JobCategory, JobTag
 from .serializers import JobListSerializer, JobDetailSerializer
+from .services.search_service import job_search_service
 
 
 class JobPagination(PageNumberPagination):
@@ -18,11 +20,11 @@ class JobPagination(PageNumberPagination):
 
 class JobListView(generics.ListAPIView):
     """
-    API endpoint for listing jobs with filtering and search
+    API endpoint for listing jobs with filtering and MinSearch-powered search
     """
     serializer_class = JobListSerializer
     pagination_class = JobPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]  # Removed SearchFilter
     
     # Fields that can be filtered
     filterset_fields = {
@@ -38,23 +40,88 @@ class JobListView(generics.ListAPIView):
         'salary_max': ['gte', 'lte'],
     }
     
-    # Fields that can be searched
-    search_fields = ['title', 'company', 'description']
-    
     # Default ordering
     ordering_fields = ['posted_date', 'created_at', 'salary_min', 'salary_max']
     ordering = ['-posted_date']  # Default: newest first
     
     def get_queryset(self):
         """
-        Return jobs from the last month, excluding archived jobs
+        Enhanced queryset with MinSearch integration for text search
         """
         one_month_ago = timezone.now() - timedelta(days=30)
         
-        return Job.objects.filter(
+        base_queryset = Job.objects.filter(
             posted_date__gte=one_month_ago,
             is_archived=False
         ).select_related('source').prefetch_related('categories', 'tags')
+        
+        # Check if there's a search query
+        search_query = self.request.GET.get('search', '').strip()
+        
+        if search_query:
+            # Use MinSearch for text search
+            search_filters = self._build_search_filters()
+            
+            search_result = job_search_service.search(
+                query=search_query,
+                filters=search_filters,
+                num_results=500  # Get more results than pagination needs
+            )
+            
+            if search_result['status'] == 'success' and search_result['results']:
+                # Get job IDs from search results
+                job_ids = [result['id'] for result in search_result['results']]
+                
+                # Return queryset ordered by search relevance
+                preserved_order = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(job_ids)])
+                return base_queryset.filter(id__in=job_ids).order_by(preserved_order)
+            else:
+                # If search fails or no results, return empty queryset
+                return base_queryset.none()
+        
+        # No search query - return normal filtered results
+        return base_queryset
+    
+    def _build_search_filters(self):
+        """Build filters for MinSearch from request parameters"""
+        filters = {}
+        
+        # Location filters
+        if self.request.GET.get('location'):
+            filters['location'] = self.request.GET.get('location')
+        if self.request.GET.get('city'):
+            filters['city'] = self.request.GET.get('city')
+        if self.request.GET.get('state'):
+            filters['state'] = self.request.GET.get('state')
+        if self.request.GET.get('country'):
+            filters['country'] = self.request.GET.get('country')
+        
+        # Job filters
+        if self.request.GET.get('job_type'):
+            filters['job_type'] = self.request.GET.get('job_type')
+        if self.request.GET.get('is_remote'):
+            filters['is_remote'] = self.request.GET.get('is_remote').lower() == 'true'
+        if self.request.GET.get('company'):
+            filters['company'] = self.request.GET.get('company')
+        
+        # Salary filters (using Django filter field names)
+        if self.request.GET.get('salary_min__gte'):
+            try:
+                filters['min_salary'] = float(self.request.GET.get('salary_min__gte'))
+            except ValueError:
+                pass
+        if self.request.GET.get('salary_max__lte'):
+            try:
+                filters['max_salary'] = float(self.request.GET.get('salary_max__lte'))
+            except ValueError:
+                pass
+        
+        # Skills filter
+        skills = self.request.GET.getlist('skills')
+        if skills:
+            filters['skills'] = skills
+        
+        return filters
 
 
 class JobDetailView(generics.RetrieveAPIView):
@@ -111,5 +178,22 @@ class FilterOptionsView(generics.GenericAPIView):
             'remote_options': [
                 {'value': True, 'label': 'Remote'},
                 {'value': False, 'label': 'On-site'}
-            ]
+            ],
+            'search_available': job_search_service.is_index_available()
+        })
+
+
+class SearchStatusView(generics.GenericAPIView):
+    """
+    API endpoint to get search system status
+    """
+    def get(self, request):
+        """Get search index status and metadata"""
+        is_available = job_search_service.is_index_available()
+        metadata = job_search_service.get_index_metadata()
+        
+        return Response({
+            'search_available': is_available,
+            'index_metadata': metadata,
+            'message': 'Search index ready' if is_available else 'Search index not available'
         })

@@ -1,10 +1,11 @@
 from django.urls import path
-from .views import JobListView, JobDetailView, FilterOptionsView
+from . import views 
 
 app_name = 'jobs'
 
 urlpatterns = [
-    path('', JobListView.as_view(), name='job-list'),
-    path('<uuid:id>/', JobDetailView.as_view(), name='job-detail'),
-    path('filters/', FilterOptionsView.as_view(), name='filter-options'),
+    path('', views.JobListView.as_view(), name='job_list'),
+    path('<uuid:id>/', views.JobDetailView.as_view(), name='job_detail'),
+    path('filters/', views.FilterOptionsView.as_view(), name='filter_options'),
+    path('search/status/', views.SearchStatusView.as_view(), name='search_status'),
 ]
