@@ -141,31 +141,6 @@ resource "aws_security_group" "airflow_sg" {
   }
 }
 
-# Security Group for OpenSearch
-resource "aws_security_group" "opensearch_sg" {
-  name        = "optimyze-opensearch-sg"
-  description = "Security group for OpenSearch"
-  vpc_id      = aws_vpc.optimyze_vpc.id
-
-  ingress {
-    from_port       = 443
-    to_port         = 443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.airflow_sg.id]
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]
-  }
-
-  tags = {
-    Name = "optimyze-opensearch-sg"
-  }
-}
-
 # Key Pair
 resource "aws_key_pair" "optimyze_key" {
   key_name   = "optimyze-key"
@@ -181,10 +156,9 @@ resource "aws_instance" "airflow_instance" {
   vpc_security_group_ids = [aws_security_group.airflow_sg.id]
   subnet_id              = aws_subnet.public_subnet.id
 
-  user_data = base64encode(templatefile("${path.module}/../scripts/user_data.sh", {
-    supabase_url    = var.supabase_url
-    supabase_key    = var.supabase_key
-    opensearch_url  = aws_opensearch_domain.optimyze_search.endpoint
+  user_data = base64encode(templatefile("${path.module}/scripts/user_data.sh", {
+    supabase_url = var.supabase_url
+    supabase_key = var.supabase_key
   }))
 
   tags = {
@@ -200,87 +174,4 @@ resource "aws_eip" "airflow_eip" {
   tags = {
     Name = "optimyze-airflow-eip"
   }
-}
-
-# OpenSearch Domain
-resource "aws_opensearch_domain" "optimyze_search" {
-  domain_name    = "optimyze-search"
-  engine_version = "OpenSearch_2.11"
-
-  cluster_config {
-    instance_type  = "t3.small.search"
-    instance_count = 1
-  }
-
-  ebs_options {
-    ebs_enabled = true
-    volume_type = "gp3"
-    volume_size = 20
-  }
-
-  vpc_options {
-    security_group_ids = [aws_security_group.opensearch_sg.id]
-    subnet_ids         = [aws_subnet.public_subnet.id]
-  }
-
-  access_policies = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "es:*"
-        Principal = "*"
-        Effect = "Allow"
-        Resource = "arn:aws:es:${var.aws_region}:*:domain/optimyze-search/*"
-      }
-    ]
-  })
-
-  tags = {
-    Domain = "optimyze-search"
-  }
-}
-
-# IAM Role for EC2 to access OpenSearch
-resource "aws_iam_role" "airflow_role" {
-  name = "optimyze-airflow-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_policy" "airflow_policy" {
-  name = "optimyze-airflow-policy"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "es:*"
-        ]
-        Resource = aws_opensearch_domain.optimyze_search.arn
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "airflow_policy_attachment" {
-  role       = aws_iam_role.airflow_role.name
-  policy_arn = aws_iam_policy.airflow_policy.arn
-}
-
-resource "aws_iam_instance_profile" "airflow_profile" {
-  name = "optimyze-airflow-profile"
-  role = aws_iam_role.airflow_role.name
 }

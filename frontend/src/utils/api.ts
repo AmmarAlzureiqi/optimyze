@@ -1,6 +1,6 @@
 // API configuration and utilities
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://optimyze.vercel.app/' 
+  ? 'https://optimyze.netlify.app/' 
   : 'http://127.0.0.1:8000';
 
 // API endpoints

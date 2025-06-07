@@ -14,16 +14,6 @@ output "ec2_public_ip" {
   value       = aws_eip.airflow_eip.public_ip
 }
 
-output "opensearch_endpoint" {
-  description = "OpenSearch domain endpoint"
-  value       = aws_opensearch_domain.optimyze_search.endpoint
-}
-
-output "opensearch_dashboard_url" {
-  description = "OpenSearch Dashboards URL"
-  value       = "https://${aws_opensearch_domain.optimyze_search.dashboard_endpoint}"
-}
-
 output "ssh_command" {
   description = "SSH command to connect to the instance"
   value       = "ssh -i ~/.ssh/optimyze-key ubuntu@${aws_eip.airflow_eip.public_ip}"

@@ -48,3 +48,5 @@ frontend/yarn-error.log*
 # Docker
 docker-compose.override.yml
 node_modules
+
+database/

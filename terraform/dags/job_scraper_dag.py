@@ -10,6 +10,7 @@ import uuid
 import re
 from typing import List, Dict, Any, Optional
 import pandas as pd
+import numpy as np
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -28,40 +29,40 @@ SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 # Job search configurations - expanded for comprehensive coverage
 JOB_SEARCHES = [
     # Software Engineering roles
-    {'site_name': 'linkedin', 'search_term': 'software engineer', 'location': 'Canada', 'results_wanted': 200},
-    {'site_name': 'indeed', 'search_term': 'software engineer', 'location': 'Canada', 'results_wanted': 200},
-    {'site_name': 'linkedin', 'search_term': 'software developer', 'location': 'Canada', 'results_wanted': 200},
-    {'site_name': 'indeed', 'search_term': 'software developer', 'location': 'Canada', 'results_wanted': 200},
-    {'site_name': 'linkedin', 'search_term': 'full stack developer', 'location': 'Canada', 'results_wanted': 150},
-    {'site_name': 'indeed', 'search_term': 'full stack developer', 'location': 'Canada', 'results_wanted': 150},
+    {'site_name': 'linkedin', 'search_term': 'software engineer', 'location': 'Canada', 'results_wanted': 100},
+    {'site_name': 'indeed', 'search_term': 'software engineer', 'location': 'Canada', 'results_wanted': 100},
+    {'site_name': 'linkedin', 'search_term': 'software developer', 'location': 'Canada', 'results_wanted': 100},
+    {'site_name': 'indeed', 'search_term': 'software developer', 'location': 'Canada', 'results_wanted': 100},
+    {'site_name': 'linkedin', 'search_term': 'full stack developer', 'location': 'Canada', 'results_wanted': 75},
+    {'site_name': 'indeed', 'search_term': 'full stack developer', 'location': 'Canada', 'results_wanted': 75},
     
     # Data roles
-    {'site_name': 'linkedin', 'search_term': 'data scientist', 'location': 'Canada', 'results_wanted': 150},
-    {'site_name': 'indeed', 'search_term': 'data scientist', 'location': 'Canada', 'results_wanted': 150},
-    {'site_name': 'linkedin', 'search_term': 'data analyst', 'location': 'Canada', 'results_wanted': 150},
-    {'site_name': 'indeed', 'search_term': 'data analyst', 'location': 'Canada', 'results_wanted': 150},
-    {'site_name': 'linkedin', 'search_term': 'data engineer', 'location': 'Canada', 'results_wanted': 150},
-    {'site_name': 'indeed', 'search_term': 'data engineer', 'location': 'Canada', 'results_wanted': 150},
+    {'site_name': 'linkedin', 'search_term': 'data scientist', 'location': 'Canada', 'results_wanted': 75},
+    {'site_name': 'indeed', 'search_term': 'data scientist', 'location': 'Canada', 'results_wanted': 75},
+    {'site_name': 'linkedin', 'search_term': 'data analyst', 'location': 'Canada', 'results_wanted': 75},
+    {'site_name': 'indeed', 'search_term': 'data analyst', 'location': 'Canada', 'results_wanted': 75},
+    {'site_name': 'linkedin', 'search_term': 'data engineer', 'location': 'Canada', 'results_wanted': 75},
+    {'site_name': 'indeed', 'search_term': 'data engineer', 'location': 'Canada', 'results_wanted': 75},
     
     # Frontend/Backend roles
-    {'site_name': 'linkedin', 'search_term': 'frontend developer', 'location': 'Canada', 'results_wanted': 100},
-    {'site_name': 'indeed', 'search_term': 'frontend developer', 'location': 'Canada', 'results_wanted': 100},
-    {'site_name': 'linkedin', 'search_term': 'backend developer', 'location': 'Canada', 'results_wanted': 100},
-    {'site_name': 'indeed', 'search_term': 'backend developer', 'location': 'Canada', 'results_wanted': 100},
+    {'site_name': 'linkedin', 'search_term': 'frontend developer', 'location': 'Canada', 'results_wanted': 75},
+    {'site_name': 'indeed', 'search_term': 'frontend developer', 'location': 'Canada', 'results_wanted': 75},
+    {'site_name': 'linkedin', 'search_term': 'backend developer', 'location': 'Canada', 'results_wanted': 75},
+    {'site_name': 'indeed', 'search_term': 'backend developer', 'location': 'Canada', 'results_wanted': 75},
     
     # DevOps and Cloud roles
-    {'site_name': 'linkedin', 'search_term': 'devops engineer', 'location': 'Canada', 'results_wanted': 100},
-    {'site_name': 'indeed', 'search_term': 'devops engineer', 'location': 'Canada', 'results_wanted': 100},
-    {'site_name': 'linkedin', 'search_term': 'cloud engineer', 'location': 'Canada', 'results_wanted': 100},
-    {'site_name': 'indeed', 'search_term': 'cloud engineer', 'location': 'Canada', 'results_wanted': 100},
+    {'site_name': 'linkedin', 'search_term': 'devops engineer', 'location': 'Canada', 'results_wanted': 50},
+    {'site_name': 'indeed', 'search_term': 'devops engineer', 'location': 'Canada', 'results_wanted': 50},
+    {'site_name': 'linkedin', 'search_term': 'cloud engineer', 'location': 'Canada', 'results_wanted': 50},
+    {'site_name': 'indeed', 'search_term': 'cloud engineer', 'location': 'Canada', 'results_wanted': 50},
     
     # US searches - major tech hubs
-    {'site_name': 'linkedin', 'search_term': 'software engineer', 'location': 'United States', 'results_wanted': 300},
-    {'site_name': 'indeed', 'search_term': 'software engineer', 'location': 'United States', 'results_wanted': 300},
-    {'site_name': 'linkedin', 'search_term': 'data scientist', 'location': 'United States', 'results_wanted': 200},
-    {'site_name': 'indeed', 'search_term': 'data scientist', 'location': 'United States', 'results_wanted': 200},
-    {'site_name': 'linkedin', 'search_term': 'software developer', 'location': 'United States', 'results_wanted': 200},
-    {'site_name': 'indeed', 'search_term': 'software developer', 'location': 'United States', 'results_wanted': 200},
+    {'site_name': 'linkedin', 'search_term': 'software engineer', 'location': 'United States', 'results_wanted': 150},
+    {'site_name': 'indeed', 'search_term': 'software engineer', 'location': 'United States', 'results_wanted': 150},
+    {'site_name': 'linkedin', 'search_term': 'data scientist', 'location': 'United States', 'results_wanted': 100},
+    {'site_name': 'indeed', 'search_term': 'data scientist', 'location': 'United States', 'results_wanted': 100},
+    {'site_name': 'linkedin', 'search_term': 'software developer', 'location': 'United States', 'results_wanted': 100},
+    {'site_name': 'indeed', 'search_term': 'software developer', 'location': 'United States', 'results_wanted': 100},
 ]
 
 # Default arguments for the DAG
@@ -77,7 +78,7 @@ default_args = {
 
 # Create the DAG
 dag = DAG(
-    'optimyze_comprehensive_job_scraper',
+    'optimyze_full_job_scraper',
     default_args=default_args,
     description='Comprehensive job scraper for Canada and US tech roles',
     schedule_interval='0 6 * * *',  # Run daily at 6 AM
@@ -86,6 +87,7 @@ dag = DAG(
     tags=['jobs', 'etl', 'scraping']
 )
 
+# ALL FUNCTION DEFINITIONS FIRST
 def get_supabase_client() -> Client:
     """Create and return Supabase client"""
     return create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -272,10 +274,16 @@ def setup_database_sources(**context) -> Dict[str, str]:
     
     return source_mapping
 
-def process_and_deduplicate_jobs(scraped_jobs: List[Dict[str, Any]], **context) -> List[Dict[str, Any]]:
+def process_and_deduplicate_jobs(**context) -> List[Dict[str, Any]]:
     """Process scraped jobs and remove duplicates"""
+    # Pull scraped jobs from XCom directly
+    scraped_jobs = context['ti'].xcom_pull(task_ids='scrape_jobs')
+    
     if not scraped_jobs:
+        print("⚠️ No scraped jobs found")
         return []
+    
+    print(f"📊 Processing {len(scraped_jobs)} scraped jobs")
     
     # Get source mapping from previous task
     source_mapping = context['ti'].xcom_pull(task_ids='setup_database_sources')
@@ -295,8 +303,13 @@ def process_and_deduplicate_jobs(scraped_jobs: List[Dict[str, Any]], **context) 
     duplicates_found = 0
     errors = 0
     
-    for job in scraped_jobs:
+    for i, job in enumerate(scraped_jobs):
         try:
+            # Debug: Check what type of object we're dealing with
+            if i == 0:  # Log first item for debugging
+                print(f"🔍 First job type: {type(job)}")
+                print(f"🔍 First job keys: {list(job.keys()) if hasattr(job, 'keys') else 'No keys method'}")
+            
             # Create external ID
             job_url = job.get('job_url', '')
             external_id = job_url if job_url else f"{job.get('title', '')}_{job.get('company', '')}"
@@ -317,12 +330,37 @@ def process_and_deduplicate_jobs(scraped_jobs: List[Dict[str, Any]], **context) 
             # Parse salary
             salary_min, salary_max, salary_interval = parse_salary(job.get('salary_range', ''))
             
-            # Extract skills
+            # Extract skills - handle arrays safely
             skills = extract_skills_from_description(job.get('description', ''))
             
             # Determine category
             category = determine_job_category(job.get('title', ''), job.get('description', ''))
             
+            # Handle date_posted safely
+            date_posted = job.get('date_posted')
+            if date_posted is not None:
+                try:
+                    # If it's already a datetime object
+                    if hasattr(date_posted, 'isoformat'):
+                        posted_date_iso = date_posted.isoformat()
+                    # If it's a string, try to parse it
+                    elif isinstance(date_posted, str):
+                        posted_date_iso = date_posted
+                    # If it's a float/int timestamp, convert it
+                    elif isinstance(date_posted, (int, float)) and not pd.isna(date_posted):
+                        posted_date_iso = datetime.fromtimestamp(date_posted).isoformat()
+                    else:
+                        # Fallback to current datetime
+                        posted_date_iso = datetime.now().isoformat()
+                except Exception:
+                    # If anything goes wrong, use current datetime
+                    posted_date_iso = datetime.now().isoformat()
+            else:
+                posted_date_iso = datetime.now().isoformat()
+
+            # Get current timestamp for created_at
+            current_timestamp = datetime.now().isoformat()
+
             # Process the job data
             processed_job = {
                 'id': str(uuid.uuid4()),
@@ -343,22 +381,25 @@ def process_and_deduplicate_jobs(scraped_jobs: List[Dict[str, Any]], **context) 
                 'salary_max': salary_max,
                 'salary_interval': salary_interval,
                 'salary_currency': 'CAD' if 'Canada' in job.get('search_location', '') else 'USD',
-                'posted_date': job.get('date_posted', datetime.now()).isoformat() if job.get('date_posted') else datetime.now().isoformat(),
+                'posted_date': posted_date_iso,
                 'description': str(job.get('description', '')),
                 'url': str(job.get('job_url', ''))[:200],
                 'details': job,  # Store raw job data
-                'skills': skills,
-                'date_scraped': datetime.now().isoformat(),
+                'skills': skills,  # This will be properly serialized later
+                'date_scraped': current_timestamp,
+                'created_at': current_timestamp,  # ADD THIS REQUIRED FIELD
+                'updated_at': current_timestamp,  # ADD THIS FIELD TOO (often required)
                 'is_archived': False,
                 'indexed_in_opensearch': False,
-                'job_category': category,
             }
             
             processed_jobs.append(processed_job)
             existing_external_ids.add(external_id)
             
         except Exception as e:
-            print(f"❌ Error processing job: {e}")
+            print(f"❌ Error processing job {i+1}: {e}")
+            print(f"🔍 Job data type: {type(job)}")
+            print(f"🔍 Job data sample: {str(job)[:200]}...")
             errors += 1
             continue
     
@@ -369,8 +410,30 @@ def process_and_deduplicate_jobs(scraped_jobs: List[Dict[str, Any]], **context) 
     
     return processed_jobs
 
-def store_jobs_in_supabase(processed_jobs: List[Dict[str, Any]], **context) -> Dict[str, int]:
+def serialize_for_json(obj):
+    """Convert non-JSON serializable objects to JSON serializable format"""
+    if hasattr(obj, 'isoformat'):  # datetime, date objects
+        return obj.isoformat()
+    elif isinstance(obj, (pd.Timestamp, pd.NaT.__class__)):
+        return obj.isoformat() if not pd.isna(obj) else None
+    elif pd.isna(obj):  # pandas NaN, NaT, etc.
+        return None
+    elif isinstance(obj, np.ndarray):  # Handle numpy arrays (skills field)
+        return obj.tolist()
+    elif isinstance(obj, (np.integer, np.floating)):  # Handle numpy numbers
+        return obj.item()
+    elif isinstance(obj, dict):
+        return {k: serialize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [serialize_for_json(item) for item in obj]
+    else:
+        return obj
+
+def store_jobs_in_supabase(**context) -> Dict[str, int]:
     """Store processed jobs in Supabase database"""
+    # Pull processed jobs from XCom directly
+    processed_jobs = context['ti'].xcom_pull(task_ids='process_jobs')
+    
     if not processed_jobs:
         return {'created': 0, 'errors': 0}
     
@@ -390,11 +453,27 @@ def store_jobs_in_supabase(processed_jobs: List[Dict[str, Any]], **context) -> D
         try:
             print(f"📤 Inserting batch {batch_num}/{total_batches} ({len(batch)} jobs)")
             
-            # Remove fields that don't exist in the database
+            # Clean and serialize the batch
             clean_batch = []
             for job in batch:
-                clean_job = {k: v for k, v in job.items() if k != 'job_category'}
-                clean_batch.append(clean_job)
+                # Serialize all values to ensure JSON compatibility
+                serialized_job = {}
+                for key, value in job.items():
+                    try:
+                        serialized_job[key] = serialize_for_json(value)
+                    except Exception as serialize_error:
+                        print(f"⚠️ Error serializing field '{key}': {serialize_error}")
+                        # For skills field specifically, ensure it's a proper list
+                        if key == 'skills':
+                            if isinstance(value, (list, np.ndarray)):
+                                serialized_job[key] = list(value) if len(value) > 0 else []
+                            else:
+                                serialized_job[key] = []
+                        else:
+                            # Set to None if serialization fails
+                            serialized_job[key] = None
+                
+                clean_batch.append(serialized_job)
             
             result = supabase.table('jobs_job').insert(clean_batch).execute()
             created_count += len(batch)
@@ -402,6 +481,13 @@ def store_jobs_in_supabase(processed_jobs: List[Dict[str, Any]], **context) -> D
             
         except Exception as e:
             print(f"❌ Error inserting batch {batch_num}: {e}")
+            # Try to get more details about the error
+            if "JSON" in str(e) or "serializable" in str(e):
+                print(f"🔍 JSON serialization error. Checking first job in batch:")
+                if batch:
+                    first_job = batch[0]
+                    for key, value in first_job.items():
+                        print(f"   {key}: {type(value)} = {str(value)[:100]}...")
             error_count += len(batch)
     
     print(f"💾 Database storage summary:")
@@ -458,7 +544,7 @@ def log_scraper_run(**context) -> None:
     ⏰ Execution Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     """)
 
-# Define tasks
+# TASK DEFINITIONS - AFTER ALL FUNCTIONS
 setup_sources_task = PythonOperator(
     task_id='setup_database_sources',
     python_callable=setup_database_sources,
@@ -474,14 +560,12 @@ scrape_jobs_task = PythonOperator(
 process_jobs_task = PythonOperator(
     task_id='process_jobs',
     python_callable=process_and_deduplicate_jobs,
-    op_kwargs={'scraped_jobs': "{{ ti.xcom_pull(task_ids='scrape_jobs') }}"},
     dag=dag,
 )
 
 store_jobs_task = PythonOperator(
     task_id='store_jobs',
     python_callable=store_jobs_in_supabase,
-    op_kwargs={'processed_jobs': "{{ ti.xcom_pull(task_ids='process_jobs') }}"},
     dag=dag,
 )
 

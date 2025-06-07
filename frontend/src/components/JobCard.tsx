@@ -34,7 +34,7 @@ const JobCard = ({
   const hasRealLogo = logo_photo_url || company_logo || logo;
   
   // Function to generate initials
-  const getCompanyInitials = (companyName: string) => {
+  const getCompanyInitials = (companyName) => {
     if (!companyName) return 'C';
     return companyName
       .split(' ')
@@ -61,8 +61,64 @@ const JobCard = ({
   const initials = getCompanyInitials(company);
   const bgColor = getBackgroundColor(company);
   
-  // Use posted or daysAgo, whichever is available
-  const postedText = posted || daysAgo || 'Recently posted';
+  // Calculate precise posting time
+  const getPostedTime = () => {
+    // First check if we have a specific posted date
+    if (job.postedDate || job.posted_date) {
+      const postedDate = new Date(job.postedDate || job.posted_date);
+      const now = new Date();
+      const diffMs = now - postedDate;
+      const diffHours = diffMs / (1000 * 60 * 60);
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      const diffWeeks = diffDays / 7;
+
+      if (diffHours < 24) {
+        // Show hours with 1 decimal place
+        return `${diffHours.toFixed(1)} hours ago`;
+      } else if (diffDays < 7) {
+        // Show days
+        const days = Math.floor(diffDays);
+        return days === 1 ? '1 day ago' : `${days} days ago`;
+      } else if (diffWeeks < 4) {
+        // Show weeks
+        const weeks = Math.floor(diffWeeks);
+        return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+      } else {
+        // Show months for very old posts
+        const months = Math.floor(diffDays / 30);
+        return months === 1 ? '1 month ago' : `${months} months ago`;
+      }
+    }
+    
+    // Fallback: parse the daysAgo or posted text if available
+    if (daysAgo && typeof daysAgo === 'string') {
+      // Try to extract numbers from strings like "2 days ago", "5 hours ago", etc.
+      const hourMatch = daysAgo.match(/(\d+\.?\d*)\s*hours?\s*ago/i);
+      const dayMatch = daysAgo.match(/(\d+)\s*days?\s*ago/i);
+      const weekMatch = daysAgo.match(/(\d+)\s*weeks?\s*ago/i);
+      
+      if (hourMatch) {
+        const hours = parseFloat(hourMatch[1]);
+        return `${hours.toFixed(1)} hours ago`;
+      } else if (dayMatch) {
+        const days = parseInt(dayMatch[1]);
+        return days === 1 ? '1 day ago' : `${days} days ago`;
+      } else if (weekMatch) {
+        const weeks = parseInt(weekMatch[1]);
+        return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+      }
+      
+      // If it already says "today", convert to hours
+      if (daysAgo.toLowerCase().includes('today')) {
+        return '0.5 hours ago'; // Assume recent if just says "today"
+      }
+    }
+    
+    // Final fallback
+    return posted || daysAgo || 'Recently posted';
+  };
+
+  const postedText = getPostedTime();
   
   // Ensure requirements is an array and has safe slice operation
   const safeRequirements = Array.isArray(requirements) ? requirements : [];
@@ -86,7 +142,7 @@ const JobCard = ({
                 // Hide the image and show the fallback div
                 e.currentTarget.style.display = 'none';
                 if (e.currentTarget.nextElementSibling) {
-                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                  e.currentTarget.nextElementSibling.style.display = 'flex';
                 }
               }}
             />
