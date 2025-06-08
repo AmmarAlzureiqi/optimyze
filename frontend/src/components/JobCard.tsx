@@ -12,23 +12,74 @@ const JobCard = ({
   saved = false,
   onSave
 }: JobCardProps) => {
-  // Safe access to job properties with fallbacks
+  // Safe access to job properties with fallbacks - updated for Django API
   const {
+    // Django API fields
     title = 'No title',
     company = 'Unknown company',
     location = 'Location not specified',
-    type = 'Not specified',
+    job_type = 'Not specified',
     description = 'No description available',
-    salary = 'Salary not specified',
+    salary_min,
+    salary_max,
+    salary_disclosed = true,
     url,
+    posted_date,
+    is_remote,
+    city,
+    state,
+    country,
+    source,
+    categories = [],
+    tags = [],
+    
+    // Fallback to original mock data fields
+    type = job_type,
+    salary = formatSalaryFromApi(),
     logo,
     logo_photo_url, // From Indeed via JobSpy
     company_logo,   // From Naukri via JobSpy
     posted,
     requirements = [],
-    daysAgo,
-    source
+    daysAgo
   } = job || {};
+
+  // Format salary from Django API fields
+  function formatSalaryFromApi(): string {
+    if (!salary_disclosed) return 'Salary not disclosed';
+    if (!salary_min && !salary_max) return 'Salary not specified';
+    
+    const formatNumber = (num: number): string => {
+      if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
+      if (num >= 1000) return `$${(num / 1000).toFixed(0)}K`;
+      return `$${num.toLocaleString()}`;
+    };
+    
+    if (salary_min && salary_max) {
+      return `${formatNumber(salary_min)} - ${formatNumber(salary_max)}`;
+    } else if (salary_min) {
+      return `${formatNumber(salary_min)}+`;
+    } else if (salary_max) {
+      return `Up to ${formatNumber(salary_max)}`;
+    }
+    
+    return 'Salary not specified';
+  }
+
+  // Get location display with Django API fields
+  const getLocationDisplay = () => {
+    if (is_remote) {
+      return location ? `${location} (Remote)` : 'Remote';
+    }
+    
+    // Build location string from available parts
+    const locationParts = [];
+    if (city) locationParts.push(city);
+    if (state) locationParts.push(state);
+    if (country && country !== 'US') locationParts.push(country);
+    
+    return locationParts.length > 0 ? locationParts.join(', ') : location || 'Location not specified';
+  };
 
   // Generate a logo URL - prioritize real logos from JobSpy
   const hasRealLogo = logo_photo_url || company_logo || logo;
@@ -61,18 +112,20 @@ const JobCard = ({
   const initials = getCompanyInitials(company);
   const bgColor = getBackgroundColor(company);
   
-  // Calculate precise posting time
+  // Calculate precise posting time - updated for Django API
   const getPostedTime = () => {
-    // First check if we have a specific posted date
-    if (job.postedDate || job.posted_date) {
-      const postedDate = new Date(job.postedDate || job.posted_date);
+    // First check Django API posted_date field
+    if (posted_date) {
+      const postedDate = new Date(posted_date);
       const now = new Date();
       const diffMs = now - postedDate;
       const diffHours = diffMs / (1000 * 60 * 60);
       const diffDays = diffMs / (1000 * 60 * 60 * 24);
       const diffWeeks = diffDays / 7;
 
-      if (diffHours < 24) {
+      if (diffHours < 1) {
+        return 'Just posted';
+      } else if (diffHours < 24) {
         // Show hours with 1 decimal place
         return `${diffHours.toFixed(1)} hours ago`;
       } else if (diffDays < 7) {
@@ -85,6 +138,29 @@ const JobCard = ({
         return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
       } else {
         // Show months for very old posts
+        const months = Math.floor(diffDays / 30);
+        return months === 1 ? '1 month ago' : `${months} months ago`;
+      }
+    }
+    
+    // Fallback: check if we have a specific posted date from mock data
+    if (job.postedDate) {
+      const postedDate = new Date(job.postedDate);
+      const now = new Date();
+      const diffMs = now - postedDate;
+      const diffHours = diffMs / (1000 * 60 * 60);
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      const diffWeeks = diffDays / 7;
+
+      if (diffHours < 24) {
+        return `${diffHours.toFixed(1)} hours ago`;
+      } else if (diffDays < 7) {
+        const days = Math.floor(diffDays);
+        return days === 1 ? '1 day ago' : `${days} days ago`;
+      } else if (diffWeeks < 4) {
+        const weeks = Math.floor(diffWeeks);
+        return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+      } else {
         const months = Math.floor(diffDays / 30);
         return months === 1 ? '1 month ago' : `${months} months ago`;
       }
@@ -120,13 +196,52 @@ const JobCard = ({
 
   const postedText = getPostedTime();
   
-  // Ensure requirements is an array and has safe slice operation
-  const safeRequirements = Array.isArray(requirements) ? requirements : [];
+  // Combine requirements from mock data with categories/tags from Django API
+  const getAllRequirements = () => {
+    const reqs: string[] = [];
+    
+    // Add original requirements if they exist
+    if (Array.isArray(requirements)) {
+      reqs.push(...requirements);
+    }
+    
+    // Add categories from Django API
+    if (Array.isArray(categories)) {
+      categories.forEach(cat => {
+        const categoryName = typeof cat === 'object' ? cat.name : cat;
+        if (categoryName && !reqs.includes(categoryName)) {
+          reqs.push(categoryName);
+        }
+      });
+    }
+    
+    // Add tags from Django API
+    if (Array.isArray(tags)) {
+      tags.slice(0, 3).forEach(tag => {
+        const tagName = typeof tag === 'object' ? tag.name : tag;
+        if (tagName && !reqs.includes(tagName)) {
+          reqs.push(tagName);
+        }
+      });
+    }
+    
+    return reqs;
+  };
+
+  const safeRequirements = getAllRequirements();
 
   const handleViewDetails = () => {
     if (url) {
       window.open(url, '_blank');
     }
+  };
+
+  // Get source name for display
+  const getSourceName = () => {
+    if (source) {
+      return typeof source === 'object' ? source.name : source;
+    }
+    return null;
   };
 
   return (
@@ -166,7 +281,7 @@ const JobCard = ({
             onClick={onSave} 
             className={`p-2 rounded-full ${saved ? 'text-blue-500 bg-blue-50' : 'text-gray-400 hover:bg-gray-50'}`}
           >
-            <BookmarkIcon className="w-5 h-5" />
+            <BookmarkIcon className={`w-5 h-5 ${saved ? 'fill-current' : ''}`} />
           </button>
         )}
       </div>
@@ -174,43 +289,45 @@ const JobCard = ({
       <div className="mt-4 flex flex-wrap gap-2">
         <div className="flex items-center text-sm text-gray-500">
           <MapPinIcon className="w-4 h-4 mr-1" />
-          {location}
+          {getLocationDisplay()}
         </div>
         <div className="flex items-center text-sm text-gray-500">
           <BriefcaseIcon className="w-4 h-4 mr-1" />
-          {type}
+          {job_type || type}
         </div>
         <div className="flex items-center text-sm text-gray-500">
           <CalendarIcon className="w-4 h-4 mr-1" />
           Posted {postedText}
         </div>
-        {source && (
+        {getSourceName() && (
           <div className="flex items-center text-sm text-gray-500">
-            <span>via {source}</span>
+            <span>via {getSourceName()}</span>
           </div>
         )}
       </div>
       
       <p className="mt-3 text-gray-600 line-clamp-2">{description}</p>
       
-      {/* Requirements section - only show if we have requirements */}
+      {/* Requirements/Categories/Tags section */}
       {safeRequirements.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {safeRequirements.slice(0, 2).map((req, index) => (
+          {safeRequirements.slice(0, 3).map((req, index) => (
             <span key={index} className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full">
               {req}
             </span>
           ))}
-          {safeRequirements.length > 2 && (
+          {safeRequirements.length > 3 && (
             <span className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full">
-              +{safeRequirements.length - 2} more
+              +{safeRequirements.length - 3} more
             </span>
           )}
         </div>
       )}
       
       <div className="mt-5 flex justify-between items-center">
-        <span className="font-medium text-gray-900">{salary}</span>
+        <span className="font-medium text-gray-900">
+          {formatSalaryFromApi()}
+        </span>
         <button 
           onClick={handleViewDetails}
           disabled={!url}
