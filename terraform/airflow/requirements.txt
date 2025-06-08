@@ -1,25 +1,23 @@
 # Job scraping and processing
-requests
-beautifulsoup4
-lxml
-selenium
-scrapy
+requests==2.32.3
+beautifulsoup4==4.12.2
+lxml==4.9.3
+selenium==4.15.2
+scrapy==2.11.0
+python-jobspy==1.1.80
+jobspy==0.29.0
 
 # Data processing
-pandas
-numpy
+pandas==2.3.0
+numpy==1.26.3
 
 # Database connections
-psycopg2-binary
-supabase
+psycopg2-binary==2.9.10
+supabase==2.15.2
 
 # Utilities
-python-decouple
-python-dateutil
+python-decouple==3.8
+python-dateutil==2.9.0
+python-dotenv==1.1.0
 
-python-jobspy
-
-# Core Django
-Django
-djangorestframework
-django-cors-headers
+apache-airflow-providers-amazon==9.8.0
