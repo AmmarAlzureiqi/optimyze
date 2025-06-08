@@ -19,7 +19,7 @@ from django.urls import path, include
 from django.http import JsonResponse
 
 def root_view(request):
-    return JsonResponse({"message": "Welcome123 to Optimyze API", "endpoints": ["/api/jobs/"]})
+    return JsonResponse({"message": "Welcome to Optimyze API", "endpoints": ["/api/jobs/"]})
 
 urlpatterns = [
     path('', root_view),
