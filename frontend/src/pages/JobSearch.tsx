@@ -104,7 +104,7 @@ const JobSearch: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [
     searchTerm, selectedIndustries, selectedTypes, selectedTitles, selectedLocations,
-    selectedCities, selectedStates, selectedCountries, selectedCompanies,
+    selectedCities, selectedStates, selectedCountries,
     isRemote, salaryMin, salaryMax
   ]);
 
