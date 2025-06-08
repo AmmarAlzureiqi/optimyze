@@ -11,6 +11,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Debug SSH Key
+      run: |
+        echo "First line of SSH key:"
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | head -1
+    
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
       with:
