@@ -1,8 +1,8 @@
 // services/jobsApi.ts
 
-// Simple configuration - you can change this URL as needed
-const API_BASE_URL = 'http://localhost:8000/api';
-
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'http://15.223.81.114/api'  // Production
+  : 'http://localhost:8000/api'; // Development
 interface SearchParams {
   page?: number;
   search?: string;
