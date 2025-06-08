@@ -11,10 +11,14 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Debug SSH Key
+    - name: Debug SSH Key Format
       run: |
-        echo "First line of SSH key:"
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" | head -1
+        echo "Key starts with BEGIN:"
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | head -1 | grep -o "BEGIN" || echo "No BEGIN found"
+        echo "Key ends with END:"
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | tail -1 | grep -o "END" || echo "No END found"
+        echo "Total lines in key:"
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | wc -l
     
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
