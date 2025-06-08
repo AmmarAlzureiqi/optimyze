@@ -96,7 +96,7 @@ jobs:
       with:
         host: ${{ secrets.AIRFLOW_EC2_IP }}
         username: ubuntu
-        key: ${{ secrets.AIRFLOW_SSH_PRIVATE_KEY }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
           echo "🚀 Starting Airflow deployment..."
