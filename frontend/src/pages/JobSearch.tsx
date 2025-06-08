@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import JobCard from '../components/JobCard';
-import jobsApiService from '../services/jobsApi';
+import jobsApiService from '../utils/jobsApi';
 import { SearchIcon, FilterIcon, XIcon, LoaderIcon } from 'lucide-react';
 
 interface Job {
@@ -26,6 +26,7 @@ interface Job {
 
 interface FilterOptions {
   job_types: string[];
+  job_titles: string[];
   companies: string[];
   locations: string[];
   cities: string[];
@@ -50,6 +51,7 @@ const JobSearch: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedTitles, setSelectedTitles] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
@@ -67,6 +69,7 @@ const JobSearch: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     job_types: [],
+    job_titles: [],
     companies: [],
     locations: [],
     cities: [],
@@ -100,7 +103,7 @@ const JobSearch: React.FC = () => {
 
     return () => clearTimeout(timeoutId);
   }, [
-    searchTerm, selectedIndustries, selectedTypes, selectedLocations,
+    searchTerm, selectedIndustries, selectedTypes, selectedTitles, selectedLocations,
     selectedCities, selectedStates, selectedCountries, selectedCompanies,
     isRemote, salaryMin, salaryMax
   ]);
@@ -119,6 +122,7 @@ const JobSearch: React.FC = () => {
       page,
       search: searchTerm.trim(),
       jobTypes: selectedTypes,
+      jobTitles: selectedTitles,
       locations: selectedLocations,
       cities: selectedCities,
       states: selectedStates,
@@ -182,6 +186,7 @@ const JobSearch: React.FC = () => {
   const clearFilters = (): void => {
     setSelectedIndustries([]);
     setSelectedTypes([]);
+    setSelectedTitles([]);
     setSelectedLocations([]);
     setSelectedCities([]);
     setSelectedStates([]);
@@ -241,6 +246,24 @@ const JobSearch: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Job Title Filter */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Job Title</h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {filterOptions.job_titles?.map(title => (
+                  <label key={title} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      checked={selectedTitles.includes(title)}
+                      onChange={() => toggleFilter(title, setSelectedTitles, selectedTitles)}
+                    />
+                    <span className="ml-2 text-gray-700">{title}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             {/* Job Type Filter */}
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-2">Job Type</h3>
@@ -360,6 +383,17 @@ const JobSearch: React.FC = () => {
 
           {/* Selected Filters Tags */}
           <div className="mt-4 flex flex-wrap gap-2">
+            {selectedTitles.map(title => (
+              <div key={title} className="bg-indigo-100 text-indigo-800 rounded-full px-3 py-1 text-sm flex items-center">
+                {title}
+                <button
+                  onClick={() => toggleFilter(title, setSelectedTitles, selectedTitles)}
+                  className="ml-1 text-indigo-800 hover:text-indigo-900"
+                >
+                  <XIcon className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
             {selectedTypes.map(type => (
               <div key={type} className="bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-sm flex items-center">
                 {type}

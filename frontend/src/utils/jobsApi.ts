@@ -7,6 +7,7 @@ interface SearchParams {
   page?: number;
   search?: string;
   jobTypes?: string[];
+  jobTitles?: string[];
   locations?: string[];
   cities?: string[];
   states?: string[];
@@ -41,6 +42,18 @@ interface Job {
 
 class JobsApiService {
   private baseURL: string;
+  
+  // Predefined job title categories for filtering
+  private jobTitleMap = {
+    'Software Developer': ['software developer', 'web developer', 'frontend developer', 'backend developer', 'full stack developer', 'fullstack developer', 'application developer', 'software dev'],
+    'Software Engineer': ['software engineer', 'sr software engineer', 'senior software engineer', 'software engineering', 'swe', 'engineer', 'development engineer'],
+    'Data Scientist': ['data scientist', 'data science', 'research scientist', 'sr data scientist', 'senior data scientist', 'principal data scientist'],
+    'Data Engineer': ['data engineer', 'data engineering', 'big data engineer', 'sr data engineer', 'senior data engineer', 'data platform engineer'],
+    'Data Analyst': ['data analyst', 'business analyst', 'data analysis', 'analytics', 'sr data analyst', 'senior data analyst', 'business intelligence'],
+    'Machine Learning Engineer': ['machine learning engineer', 'ml engineer', 'machine learning', 'ai engineer', 'artificial intelligence engineer', 'mlops engineer'],
+    'Database Engineer': ['database engineer', 'database administrator', 'dba', 'database developer', 'sql developer', 'database architect'],
+    'AI Engineer': ['ai engineer', 'artificial intelligence engineer', 'ai developer', 'ai researcher', 'computer vision engineer', 'nlp engineer']
+  };
 
   constructor() {
     this.baseURL = `${API_BASE_URL}/jobs`;
@@ -175,9 +188,29 @@ class JobsApiService {
 
       const options = await response.json();
       
+      // Clean up messy job types and add predefined job titles
+      const cleanJobTypes = (jobTypes: string[]) => {
+        const cleanSet = new Set<string>();
+        jobTypes.forEach(type => {
+          if (type) {
+            // Split by comma and clean each type
+            const types = type.split(',').map(t => t.trim().toLowerCase()).filter(t => t && t !== 'none' && t !== 'null');
+            types.forEach(t => cleanSet.add(t));
+          }
+        });
+        return Array.from(cleanSet).sort();
+      };
+      
+      // Clean the options and add predefined job titles
+      const cleanedOptions = {
+        ...options,
+        job_types: cleanJobTypes(options.job_types || []),
+        job_titles: Object.keys(this.jobTitleMap) // Add our predefined job titles
+      };
+      
       return {
         success: true,
-        data: options
+        data: cleanedOptions
       };
     } catch (error) {
       console.error('Error fetching filter options:', error);
@@ -186,6 +219,7 @@ class JobsApiService {
         error: error instanceof Error ? error.message : 'Failed to fetch filter options',
         data: {
           job_types: [],
+          job_titles: Object.keys(this.jobTitleMap), // Always provide job titles even if API fails
           companies: [],
           locations: [],
           cities: [],

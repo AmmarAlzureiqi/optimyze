@@ -1,0 +1,149 @@
+name: Deploy Airflow to EC2
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'terraform/airflow/**'  # Only trigger when terraform/airflow folder changes
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.AIRFLOW_EC2_IP }}
+        username: ubuntu
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          echo "🚀 Starting Airflow deployment..."
+          
+          # Navigate to airflow directory
+          cd /opt/airflow
+          
+          # Stop current containers
+          docker compose down
+          
+          # Backup current DAGs
+          cp -r dags dags_backup_$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
+          
+          # Pull latest changes from your repo
+          if [ ! -d "/tmp/repo" ]; then
+            git clone https://github.com/AmmarAlzureiqi/optimyze.git /tmp/repo
+          else
+            cd /tmp/repo && git pull origin main
+          fi
+          
+          # Copy airflow files from terraform/airflow to /opt/airflow
+          echo "📁 Copying Airflow files..."
+          cp /tmp/repo/terraform/airflow/docker-compose.yml /opt/airflow/
+          cp /tmp/repo/terraform/airflow/.env /opt/airflow/
+          cp /tmp/repo/terraform/airflow/requirements.txt /opt/airflow/
+          cp -r /tmp/repo/terraform/airflow/dags/* /opt/airflow/dags/ 2>/dev/null || true
+          
+          # Ensure proper permissions
+          sudo chown -R 50000:50000 /opt/airflow/{dags,logs,plugins}
+          chmod -R 755 /opt/airflow/{dags,logs,plugins}
+          
+          # Start services
+          echo "🐳 Starting Airflow services..."
+          docker compose up -d
+          
+          # Wait for services to be ready
+          echo "⏳ Waiting for services to start..."
+          sleep 60
+          
+          # Health check
+          echo "🏥 Health check..."
+          docker compose ps
+          
+          # Test Airflow UI
+          if curl -s http://localhost:8080 > /dev/null; then
+            echo "✅ Airflow UI is responding"
+          else
+            echo "❌ Airflow UI not responding"
+            docker compose logs
+          fi
+          
+          # Cleanup
+          rm -rf /tmp/repo
+          
+          echo "✅ Deployment completed!"
+          name: Deploy Airflow to EC2
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'airflow/**'  # Only trigger when airflow folder changes
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.AIRFLOW_EC2_IP }}
+        username: ubuntu
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          echo "🚀 Starting Airflow deployment..."
+          
+          # Navigate to airflow directory
+          cd /opt/airflow
+          
+          # Stop current containers
+          docker compose down
+          
+          # Backup current setup
+          cp -r dags dags_backup_$(date +%Y%m%d_%H%M%S) || true
+          
+          # Pull latest changes
+          git pull origin main || echo "No git repo, will copy files manually"
+          
+          # Copy airflow files from repo (if using subdirectory)
+          # Adjust path based on your repo structure
+          
+          # Update DAGs
+          echo "📁 Updating DAGs..."
+          
+          # Install/update requirements
+          echo "📦 Updating requirements..."
+          
+          # Start services
+          echo "🐳 Starting Airflow services..."
+          docker compose up -d
+          
+          # Wait for services to be ready
+          echo "⏳ Waiting for services to start..."
+          sleep 30
+          
+          # Health check
+          echo "🏥 Health check..."
+          docker compose ps
+          
+          # Test Airflow UI
+          if curl -s http://localhost:8080 > /dev/null; then
+            echo "✅ Airflow UI is responding"
+          else
+            echo "❌ Airflow UI not responding"
+            docker compose logs webserver
+          fi
+          
+          echo "✅ Deployment completed!"
+    
+    - name: Notify Deployment Status
+      if: failure()
+      run: echo "❌ Airflow deployment failed"

@@ -25,7 +25,7 @@ variable "supabase_key" {
 variable "airflow_instance_type" {
   description = "EC2 instance type for Airflow"
   type        = string
-  default     = "t3.small"  # 2 vCPU, 4GB RAM - good for Airflow
+  default     = "t3.small"
 }
 
 variable "airflow_admin_user" {
