@@ -191,16 +191,7 @@ resource "aws_instance" "airflow_instance" {
     encrypted   = true
   }
 
-  user_data = base64encode(templatefile("${path.module}/scripts/airflow_bootstrap.sh", {
-    supabase_url           = var.supabase_url
-    supabase_key           = var.supabase_key
-    airflow_admin_user     = var.airflow_admin_user
-    airflow_admin_password = var.airflow_admin_password
-    airflow_admin_email    = var.airflow_admin_email
-    github_repo            = var.github_repo
-    github_branch          = var.github_branch
-    deploy_key             = var.deploy_key
-  }))
+  user_data = base64encode(templatefile("${path.module}/scripts/ec2_bootstrap.sh", {}))
 
   tags = {
     Name    = "optimyze-airflow"
@@ -229,15 +220,12 @@ resource "aws_lightsail_instance" "django_backend" {
   blueprint_id      = "ubuntu_22_04"
   bundle_id         = var.django_bundle_id
 
-  user_data = base64encode(templatefile("${path.module}/scripts/django_setup.sh", {
-    supabase_url      = var.supabase_url
-    supabase_key      = var.supabase_key
+  user_data = base64encode(templatefile("${path.module}/scripts/django_bootstrap.sh", {
     django_secret_key = var.django_secret_key
     allowed_hosts     = var.allowed_hosts
-    airflow_ip        = aws_eip.airflow_eip.public_ip
+    supabase_url      = var.supabase_url
+    supabase_key      = var.supabase_key
     github_repo       = var.github_repo
-    github_branch     = var.github_branch
-    deploy_key        = var.deploy_key
   }))
 
   tags = {

@@ -1,0 +1,25 @@
+# Job scraping and processing
+requests
+beautifulsoup4
+lxml
+selenium
+scrapy
+
+# Data processing
+pandas
+numpy
+
+# Database connections
+psycopg2-binary
+supabase
+
+# Utilities
+python-decouple
+python-dateutil
+
+python-jobspy
+
+# Core Django
+Django
+djangorestframework
+django-cors-headers

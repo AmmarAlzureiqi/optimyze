@@ -25,7 +25,7 @@ variable "supabase_key" {
 variable "airflow_instance_type" {
   description = "EC2 instance type for Airflow"
   type        = string
-  default     = "t3.medium"  # 2 vCPU, 4GB RAM - good for Airflow
+  default     = "t3.small"  # 2 vCPU, 4GB RAM - good for Airflow
 }
 
 variable "airflow_admin_user" {
@@ -50,7 +50,7 @@ variable "airflow_admin_email" {
 variable "django_bundle_id" {
   description = "Lightsail bundle ID for Django instance"
   type        = string
-  default     = "small_2_0"  # $10/month - 2GB RAM, 1 vCPU, 60GB SSD
+  default     = "micro_2_0" 
 }
 
 variable "django_secret_key" {
