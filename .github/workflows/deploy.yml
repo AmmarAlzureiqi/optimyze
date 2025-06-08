@@ -16,8 +16,7 @@ jobs:
       with:
         host: 15.223.81.114
         username: ubuntu
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: 22
+        password: ${{ secrets.SERVER_PASSWORD }}
         script: |
           cd /home/ubuntu/optimyze/backend
           git pull origin main
