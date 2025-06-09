@@ -2,12 +2,13 @@
 from rest_framework import generics, filters
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from django.db.models import Case, When
 from datetime import timedelta
 from .models import Job, JobCategory, JobTag
-from .serializers import JobListSerializer, JobDetailSerializer
+from .serializers import JobListSerializer, JobDetailSerializer, PublicJobListSerializer
 from .services.search_service import job_search_service
 
 
@@ -22,7 +23,7 @@ class JobListView(generics.ListAPIView):
     """
     API endpoint for listing jobs with filtering and MinSearch-powered search
     """
-    serializer_class = JobListSerializer
+    permission_classes = [AllowAny]  # Allow both authenticated and anonymous users
     pagination_class = JobPagination
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]  # Removed SearchFilter
     
@@ -43,6 +44,12 @@ class JobListView(generics.ListAPIView):
     # Default ordering
     ordering_fields = ['posted_date', 'created_at', 'salary_min', 'salary_max']
     ordering = ['-posted_date']  # Default: newest first
+    
+    def get_serializer_class(self):
+        """Return different serializers based on authentication status"""
+        if self.request.user.is_authenticated:
+            return JobListSerializer  # Full job details for authenticated users
+        return PublicJobListSerializer  # Limited details for public users
     
     def get_queryset(self):
         """
@@ -128,9 +135,14 @@ class JobDetailView(generics.RetrieveAPIView):
     """
     API endpoint for retrieving individual job details
     """
-    queryset = Job.objects.filter(is_archived=False)
-    serializer_class = JobDetailSerializer
+    permission_classes = [AllowAny]  # Allow both authenticated and anonymous users
     lookup_field = 'id'
+    
+    def get_serializer_class(self):
+        """Return different serializers based on authentication status"""
+        if self.request.user.is_authenticated:
+            return JobDetailSerializer  # Full job details
+        return PublicJobListSerializer  # Limited details for public users
     
     def get_queryset(self):
         return Job.objects.filter(
@@ -142,6 +154,8 @@ class FilterOptionsView(generics.GenericAPIView):
     """
     API endpoint to get available filter options
     """
+    permission_classes = [AllowAny]  # Allow both authenticated and anonymous users
+    
     def get(self, request):
         """
         Return available filter options for the frontend
@@ -179,7 +193,8 @@ class FilterOptionsView(generics.GenericAPIView):
                 {'value': True, 'label': 'Remote'},
                 {'value': False, 'label': 'On-site'}
             ],
-            'search_available': job_search_service.is_index_available()
+            'search_available': job_search_service.is_index_available(),
+            'user_authenticated': request.user.is_authenticated
         })
 
 
@@ -187,6 +202,8 @@ class SearchStatusView(generics.GenericAPIView):
     """
     API endpoint to get search system status
     """
+    permission_classes = [AllowAny]  # Allow both authenticated and anonymous users
+    
     def get(self, request):
         """Get search index status and metadata"""
         is_available = job_search_service.is_index_available()
@@ -195,5 +212,6 @@ class SearchStatusView(generics.GenericAPIView):
         return Response({
             'search_available': is_available,
             'index_metadata': metadata,
-            'message': 'Search index ready' if is_available else 'Search index not available'
+            'message': 'Search index ready' if is_available else 'Search index not available',
+            'user_authenticated': request.user.is_authenticated
         })

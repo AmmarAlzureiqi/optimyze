@@ -25,9 +25,64 @@ class JobTagSerializer(serializers.ModelSerializer):
         fields = ['name']
 
 
+class PublicJobListSerializer(serializers.ModelSerializer):
+    """
+    Limited serializer for public (unauthenticated) users
+    Shows basic job info but hides sensitive details like salary and company URLs
+    """
+    source = SourceSerializer(read_only=True)
+    categories = JobCategorySerializer(many=True, read_only=True)
+    days_ago = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Job
+        fields = [
+            'id',
+            'title',
+            'company',
+            'location',
+            'city',
+            'state',
+            'country',
+            'is_remote',
+            'job_type',
+            'job_function',
+            'posted_date',
+            'days_ago',
+            'source',
+            'categories',
+            'description'  # Will be truncated in to_representation
+        ]
+    
+    def get_days_ago(self, obj):
+        """Calculate how many days ago the job was posted"""
+        if obj.posted_date:
+            delta = timezone.now() - obj.posted_date
+            days = delta.days
+            if days == 0:
+                return "Today"
+            elif days == 1:
+                return "1 day ago"
+            else:
+                return f"{days} days ago"
+        return "Unknown"
+    
+    def to_representation(self, instance):
+        """Customize the output for public users"""
+        data = super().to_representation(instance)
+        
+        # Truncate description for public users
+        if data.get('description'):
+            description = data['description']
+            if len(description) > 250:
+                data['description'] = description[:250] + '... [Sign up to read more]'
+        
+        return data
+
+
 class JobListSerializer(serializers.ModelSerializer):
     """
-    Lightweight serializer for job listings
+    Lightweight serializer for job listings (authenticated users)
     Only includes essential fields for list view
     """
     source = SourceSerializer(read_only=True)

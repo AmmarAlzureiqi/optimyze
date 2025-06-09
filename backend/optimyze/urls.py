@@ -17,6 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
+from users.views import RegisterView, UserProfileView
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 def root_view(request):
     return JsonResponse({"message": "Welcome to Optimyze API", "endpoints": ["/api/jobs/"]})
@@ -25,4 +30,5 @@ urlpatterns = [
     path('', root_view),
     path('admin/', admin.site.urls),
     path('api/jobs/', include('jobs.urls')),
+    path('api/auth/', include('users.urls')),
 ]
