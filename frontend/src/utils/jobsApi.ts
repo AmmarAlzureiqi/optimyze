@@ -1,7 +1,7 @@
 // services/jobsApi.ts
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'http://15.223.81.114/api'  // Production
+  ? 'https://optimyzeapi.com/api'  // Production
   : 'http://localhost:8000/api'; // Development
 interface SearchParams {
   page?: number;
