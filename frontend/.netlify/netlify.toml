@@ -1,28 +1,12 @@
-plugins = []
-headers = []
-redirects = []
-
-[functions]
-
-[functions."*"]
-
 [build]
-publish = "/Users/ammaralzureiqi/Desktop/ammar.1/Projects/optimyze/frontend/dist"
-publishOrigin = "ui"
-commandOrigin = "ui"
-base = "/Users/ammaralzureiqi/Desktop/ammar.1/Projects/optimyze/frontend"
 command = "npm run build"
+publish = "dist"  # ✅ relative path
 
+# Optional: Set environment variables like NODE_VERSION, etc.
 [build.environment]
 
-[build.processing]
-
-[build.processing.css]
-
-[build.processing.html]
-
-[build.processing.images]
-
-[build.processing.js]
-
-[build.services]
+# For React Router or other SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
