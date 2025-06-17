@@ -6,19 +6,24 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.secrets_manager import SecretsManagerHook
 from supabase import create_client, Client
 
+load_dotenv('/home/airflow/.env') 
+
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+
 def get_supabase_client():
-    """Get Supabase client using credentials from AWS Secrets Manager"""
-    secrets_hook = SecretsManagerHook(aws_conn_id='aws_default')
-    secret = secrets_hook.get_secret('optimyze-dev-supabase-credentials-8df5242f')
-    credentials = json.loads(secret)
+    # """Get Supabase client using credentials from AWS Secrets Manager"""
+    # secrets_hook = SecretsManagerHook(aws_conn_id='aws_default')
+    # secret = secrets_hook.get_secret('optimyze-dev-supabase-credentials-8df5242f')
+    # credentials = json.loads(secret)
     
-    supabase_url = credentials.get('supabase_url')
-    supabase_key = credentials.get('supabase_key')
+    # supabase_url = credentials.get('supabase_url')
+    # supabase_key = credentials.get('supabase_key')
     
-    if not supabase_url or not supabase_key:
-        raise ValueError("Missing supabase_url or supabase_key in secrets")
+    # if not supabase_url or not supabase_key:
+    #     raise ValueError("Missing supabase_url or supabase_key in secrets")
     
-    supabase: Client = create_client(supabase_url, supabase_key)
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
     return supabase
 
 def extract_skills_from_description(description):
