@@ -37,11 +37,17 @@ jobs:
           fi
           
           echo "Copying Airflow files..."
-          cp /tmp/repo/terraform/airflow/docker-compose.yml /opt/airflow/
-          cp /tmp/repo/terraform/airflow/.env /opt/airflow/
-          cp /tmp/repo/terraform/airflow/requirements.txt /opt/airflow/
-          cp /tmp/repo/terraform/airflow/Dockerfile /opt/airflow/
-          cp -r /tmp/repo/terraform/airflow/dags/* /opt/airflow/dags/ 2>/dev/null || true
+          cp terraform/airflow/docker-compose.yaml ../../
+          cp terraform/airflow/.env ../../
+          cp terraform/airflow/requirements.txt ../../
+          cp terraform/airflow/Dockerfile ../../
+          cp -r terraform/airflow/dags/* /opt/airflow/dags/ 2>/dev/null || true
+
+          # cp /tmp/repo/terraform/airflow/docker-compose.yml /opt/airflow/
+          # cp /tmp/repo/terraform/airflow/.env /opt/airflow/
+          # cp /tmp/repo/terraform/airflow/requirements.txt /opt/airflow/
+          # cp /tmp/repo/terraform/airflow/Dockerfile /opt/airflow/
+          # cp -r /tmp/repo/terraform/airflow/dags/* /opt/airflow/dags/ 2>/dev/null || true
           
           sudo chown -R 50000:50000 /opt/airflow/{dags,logs,plugins}
           chmod -R 755 /opt/airflow/{dags,logs,plugins}
