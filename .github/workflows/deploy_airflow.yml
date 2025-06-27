@@ -32,15 +32,16 @@ jobs:
           
           echo "$PWD"
           cd /tmp/repo
+          echo "$PWD"
           echo "pulling from github..."
           git pull origin main
           
           
           echo "Copying Airflow files..."
-          cp terraform/airflow/docker-compose.yaml ../../
-          cp terraform/airflow/.env ../../
-          cp terraform/airflow/requirements.txt ../../
-          cp terraform/airflow/Dockerfile ../../
+          cp /tmp/repo/terraform/airflow/docker-compose.yaml ../../
+          cp /tmp/repo/terraform/airflow/.env ../../
+          cp /tmp/repo/terraform/airflow/requirements.txt ../../
+          cp /tmp/repo/terraform/airflow/Dockerfile ../../
           sudo cp -r terraform/airflow/dags/* /opt/airflow/dags/ || true
 
           # cp /tmp/repo/terraform/airflow/docker-compose.yml /opt/airflow/
