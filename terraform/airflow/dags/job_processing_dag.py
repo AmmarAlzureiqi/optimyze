@@ -12,7 +12,7 @@ SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
 def get_supabase_client():
-    ## """Get Supabase client using credentials from AWS Secrets Manager"""
+    # """Get Supabase client using credentials from AWS Secrets Manager"""
     # secrets_hook = SecretsManagerHook(aws_conn_id='aws_default')
     # secret = secrets_hook.get_secret('optimyze-dev-supabase-credentials-8df5242f')
     # credentials = json.loads(secret)
