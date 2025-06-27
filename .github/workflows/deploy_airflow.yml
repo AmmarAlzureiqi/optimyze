@@ -28,7 +28,7 @@ jobs:
           
           docker compose down
           
-          cp -r dags dags_backup_$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
+          # cp -r dags dag_backups/dags_backup_$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
           
           echo "$PWD"
           cd /tmp/repo
@@ -41,7 +41,7 @@ jobs:
           cp terraform/airflow/.env ../../
           cp terraform/airflow/requirements.txt ../../
           cp terraform/airflow/Dockerfile ../../
-          cp -r terraform/airflow/dags/* /opt/airflow/dags/ 2>/dev/null || true
+          sudo cp -r terraform/airflow/dags/* /opt/airflow/dags/ || true
 
           # cp /tmp/repo/terraform/airflow/docker-compose.yml /opt/airflow/
           # cp /tmp/repo/terraform/airflow/.env /opt/airflow/
