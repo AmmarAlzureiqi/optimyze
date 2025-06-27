@@ -23,7 +23,7 @@ jobs:
         port: 22
         script: |
           echo "Starting Airflow deployment..."
-          
+          cd ../..
           cd /opt/airflow
           
           docker compose down
