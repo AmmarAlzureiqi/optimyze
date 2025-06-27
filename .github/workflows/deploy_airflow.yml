@@ -39,7 +39,6 @@ jobs:
           
           echo "Copying Airflow files..."
           cp terraform/airflow/docker-compose.yaml ../../
-          cp terraform/airflow/.env ../../
           cp terraform/airflow/requirements.txt ../../
           cp terraform/airflow/Dockerfile ../../
           sudo cp -r terraform/airflow/dags/* /opt/airflow/dags/ || true
