@@ -30,7 +30,7 @@ jobs:
           
           cp -r dags dags_backup_$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
           
-          
+          echo "$PWD"
           cd /tmp/repo
           echo "pulling from github..."
           git pull origin main
