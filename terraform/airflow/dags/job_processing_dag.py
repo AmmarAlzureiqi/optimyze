@@ -6,6 +6,7 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.secrets_manager import SecretsManagerHook
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import os
 
 load_dotenv('/home/airflow/.env') 
 
