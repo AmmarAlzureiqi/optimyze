@@ -16,7 +16,8 @@ import dj_database_url
 
 # Initialize environment variables
 env = environ.Env()
-environ.Env.read_env(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+# environ.Env.read_env(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Build paths inside the project
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
