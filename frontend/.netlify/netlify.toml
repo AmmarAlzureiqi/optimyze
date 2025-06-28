@@ -1,28 +1,24 @@
-plugins = []
-headers = []
-redirects = []
-
-[functions]
-
-[functions."*"]
-
 [build]
-publish = "/Users/ammaralzureiqi/Desktop/ammar.1/Projects/optimyze/frontend/dist"
-publishOrigin = "ui"
-commandOrigin = "ui"
-base = "/Users/ammaralzureiqi/Desktop/ammar.1/Projects/optimyze/frontend"
-command = "npm run build"
+  base = "frontend"
+  publish = "frontend/dist"
+  command = "npm run build"
 
 [build.environment]
+  NODE_VERSION = "18"
 
-[build.processing]
+# Fix MIME type issues
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Content-Type = "text/javascript"
 
-[build.processing.css]
+[[headers]]
+  for = "/*.mjs"
+  [headers.values]
+    Content-Type = "text/javascript"
 
-[build.processing.html]
-
-[build.processing.images]
-
-[build.processing.js]
-
-[build.services]
+# SPA routing support
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
