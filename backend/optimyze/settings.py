@@ -14,13 +14,14 @@ import os
 import environ
 import dj_database_url
 
+# Build paths inside the project
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # Initialize environment variables
 env = environ.Env()
 # environ.Env.read_env(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
-# Build paths inside the project
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
