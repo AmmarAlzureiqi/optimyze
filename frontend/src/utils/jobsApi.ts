@@ -1,8 +1,13 @@
 // services/jobsApi.ts
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://optimyzeapi.com/api'  // Production
-  : 'http://localhost:8000/api'; // Development
+// const API_BASE_URL = process.env.NODE_ENV === 'production' 
+//   ? 'https://optimyzeapi.com/api'  // Production
+//   : 'http://localhost:8000/api'; // Development
+
+const isDevelopment = process.env.NODE_ENV === 'development';
+const API_BASE_URL = isDevelopment 
+  ? 'http://localhost:8000/api'  // Local development (if you ever need it)
+  : 'https://optimyzeapi.com/api'; // Production/Lightsail
 interface SearchParams {
   page?: number;
   search?: string;

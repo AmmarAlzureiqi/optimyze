@@ -1,4 +1,4 @@
-// new src/pages/PublicJobSearch.tsx
+// src/pages/PublicJobSearch.tsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import JobCard from '../components/JobCard';
