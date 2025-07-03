@@ -76,27 +76,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const fetchUserProfile = async (token: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/user/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        setIsAuthenticated(true);
-      } else {
-        throw new Error('Failed to fetch user profile');
+  // Temporarily add this to your AuthContext in the fetchUserProfile function
+const fetchUserProfile = async (token: string) => {
+  try {
+    const url = `${API_BASE_URL}/auth/user/`;
+    console.log('🔍 Fetching user profile from:', url); // Debug log
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       }
-    } catch (error) {
-      if (IS_DEBUG) console.error('Failed to fetch user profile:', error);
-      clearAuthData();
+    });
+
+    console.log('📡 Response status:', response.status); // Debug log
+    
+    if (response.ok) {
+      const userData = await response.json();
+      setUser(userData);
+      setIsAuthenticated(true);
+    } else {
+      throw new Error('Failed to fetch user profile');
     }
-  };
+  } catch (error) {
+    if (IS_DEBUG) console.error('Failed to fetch user profile:', error);
+    clearAuthData();
+  }
+};
 
   const refreshToken = async (): Promise<boolean> => {
     const refresh = localStorage.getItem('refresh_token');
