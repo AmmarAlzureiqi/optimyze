@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import JobCard from '../components/JobCard';
 import jobsApiService from '../utils/jobsApi';
-import { Search, Filter, X, Loader } from 'lucide-react';
+import { Search, Filter, X, Loader, MapPin, Briefcase, Building2, DollarSign } from 'lucide-react';
 
 interface Job {
   id: string;
@@ -200,388 +200,404 @@ const PublicJobSearch = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const getActiveFilterCount = () => {
+    return selectedTypes.length + selectedTitles.length + selectedLocations.length + 
+           selectedCities.length + selectedStates.length + selectedCountries.length + 
+           selectedCompanies.length + (isRemote ? 1 : 0) + 
+           (salaryMin ? 1 : 0) + (salaryMax ? 1 : 0);
+  };
+
   return (
-    <div className="space-y-8">
-      {/* Header Section */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Job Search</h1>
-        <p className="text-gray-600 mt-2">
-          Find your next opportunity from thousands of available positions
-        </p>
-      </div>
-
-      {/* CTA Banner */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="bg-blue-600 text-white p-6 rounded-lg">
-          <h3 className="text-lg font-semibold mb-2">
-            🚀 Get More Features
-          </h3>
-          <p className="mb-4">
-            Create an account to save jobs, track applications, and get personalized recommendations
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link 
-              to="/register"
-              className="bg-white text-blue-600 px-6 py-3 rounded-md hover:bg-gray-50 font-semibold transition-colors text-center"
-            >
-              Create Account
-            </Link>
-            <Link 
-              to="/login"
-              className="border border-white text-white px-6 py-3 rounded-md hover:bg-blue-700 font-semibold transition-colors text-center"
-            >
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Search Section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Search Jobs</h2>
-          <button 
-            className="mt-4 md:mt-0 flex items-center text-blue-600 hover:text-blue-800"
-            onClick={() => setFiltersVisible(!filtersVisible)}
-          >
-            <Filter className="w-5 h-5 mr-2" />
-            {filtersVisible ? 'Hide Filters' : 'Show Filters'}
-          </button>
-        </div>
-
-        {/* Search Bar */}
-        <div className="relative mb-6">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Search jobs by title, company, or keyword"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* Filters */}
-        {filtersVisible && (
-          <div className="border-t pt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Filters</h3>
-              <button
-                className="text-sm text-gray-500 hover:text-gray-700"
-                onClick={clearFilters}
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              Find Your Dream Job
+            </h1>
+            <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
+              Discover thousands of opportunities from top companies. Start your career journey today.
+            </p>
+            
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              <Link 
+                to="/register"
+                className="bg-white text-blue-600 px-8 py-3 rounded-lg hover:bg-gray-50 font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
-                Clear All
-              </button>
+                Create Free Account
+              </Link>
+              <Link 
+                to="/login"
+                className="border-2 border-white text-white px-8 py-3 rounded-lg hover:bg-white hover:text-blue-600 font-semibold transition-all duration-200"
+              >
+                Sign In
+              </Link>
+            </div>
+
+            {/* Search Bar */}
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white rounded-xl shadow-2xl p-6">
+                <div className="flex flex-col lg:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-lg text-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Job title, keywords, or company"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <button 
+                    className="lg:w-auto w-full bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 font-semibold transition-colors duration-200 flex items-center justify-center gap-2"
+                    onClick={() => setFiltersVisible(!filtersVisible)}
+                  >
+                    <Filter className="w-5 h-5" />
+                    Filters {getActiveFilterCount() > 0 && `(${getActiveFilterCount()})`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Filters Section */}
+        {filtersVisible && (
+          <div className="bg-white rounded-xl shadow-lg mb-8 overflow-hidden">
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Filter className="w-5 h-5" />
+                  Filter Jobs
+                </h3>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-500">{getActiveFilterCount()} filters active</span>
+                  <button
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    onClick={clearFilters}
+                  >
+                    Clear All
+                  </button>
+                  <button
+                    className="lg:hidden text-gray-400 hover:text-gray-600"
+                    onClick={() => setFiltersVisible(false)}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Job Title Filter */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Job Title</h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {filterOptions.job_titles?.map(title => (
-                    <label key={title} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        checked={selectedTitles.includes(title)}
-                        onChange={() => toggleFilter(title, setSelectedTitles, selectedTitles)}
-                      />
-                      <span className="ml-2 text-gray-700">{title}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Job Type Filter */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Job Type</h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {filterOptions.job_types?.map(type => (
-                    <label key={type} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        checked={selectedTypes.includes(type)}
-                        onChange={() => toggleFilter(type, setSelectedTypes, selectedTypes)}
-                      />
-                      <span className="ml-2 text-gray-700">{type}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Location Filter */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Location</h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {filterOptions.locations?.map(location => (
-                    <label key={location} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        checked={selectedLocations.includes(location)}
-                        onChange={() => toggleFilter(location, setSelectedLocations, selectedLocations)}
-                      />
-                      <span className="ml-2 text-gray-700">{location}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Company Filter */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Company</h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {filterOptions.companies?.slice(0, 20).map(company => (
-                    <label key={company} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        checked={selectedCompanies.includes(company)}
-                        onChange={() => toggleFilter(company, setSelectedCompanies, selectedCompanies)}
-                      />
-                      <span className="ml-2 text-gray-700">{company}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Remote/On-site Filter */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Work Type</h4>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="remote"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      checked={isRemote === ''}
-                      onChange={() => setIsRemote('')}
-                    />
-                    <span className="ml-2 text-gray-700">All</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="remote"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      checked={isRemote === 'true'}
-                      onChange={() => setIsRemote('true')}
-                    />
-                    <span className="ml-2 text-gray-700">Remote</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="remote"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      checked={isRemote === 'false'}
-                      onChange={() => setIsRemote('false')}
-                    />
-                    <span className="ml-2 text-gray-700">On-site</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Salary Range */}
-              <div className="md:col-span-2">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Salary Range</h4>
-                <div className="flex space-x-4">
-                  <div className="flex-1">
-                    <input
-                      type="number"
-                      placeholder="Min salary"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      value={salaryMin}
-                      onChange={(e) => setSalaryMin(e.target.value)}
-                    />
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Job Title Filter */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-gray-500" />
+                    <h4 className="font-medium text-gray-900">Job Title</h4>
                   </div>
-                  <div className="flex-1">
-                    <input
-                      type="number"
-                      placeholder="Max salary"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      value={salaryMax}
-                      onChange={(e) => setSalaryMax(e.target.value)}
-                    />
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                    {filterOptions.job_titles?.slice(0, 10).map(title => (
+                      <label key={title} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          checked={selectedTitles.includes(title)}
+                          onChange={() => toggleFilter(title, setSelectedTitles, selectedTitles)}
+                        />
+                        <span className="text-sm text-gray-700 truncate">{title}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Job Type Filter */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-gray-500" />
+                    <h4 className="font-medium text-gray-900">Job Type</h4>
+                  </div>
+                  <div className="space-y-2">
+                    {filterOptions.job_types?.map(type => (
+                      <label key={type} className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          checked={selectedTypes.includes(type)}
+                          onChange={() => toggleFilter(type, setSelectedTypes, selectedTypes)}
+                        />
+                        <span className="text-sm text-gray-700">{type}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Location Filter */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-gray-500" />
+                    <h4 className="font-medium text-gray-900">Location</h4>
+                  </div>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                    {filterOptions.locations?.slice(0, 10).map(location => (
+                      <label key={location} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          checked={selectedLocations.includes(location)}
+                          onChange={() => toggleFilter(location, setSelectedLocations, selectedLocations)}
+                        />
+                        <span className="text-sm text-gray-700 truncate">{location}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Salary & Remote */}
+                <div className="space-y-4">
+                  {/* Salary Range */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-gray-500" />
+                      <h4 className="font-medium text-gray-900">Salary Range</h4>
+                    </div>
+                    <div className="space-y-2">
+                      <input
+                        type="number"
+                        placeholder="Min salary"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        value={salaryMin}
+                        onChange={(e) => setSalaryMin(e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max salary"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        value={salaryMax}
+                        onChange={(e) => setSalaryMax(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Remote Options */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900">Work Type</h4>
+                    <div className="space-y-2">
+                      {[
+                        { value: '', label: 'All' },
+                        { value: 'true', label: 'Remote' },
+                        { value: 'false', label: 'On-site' }
+                      ].map(option => (
+                        <label key={option.value} className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded cursor-pointer">
+                          <input
+                            type="radio"
+                            name="remote"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            checked={isRemote === option.value}
+                            onChange={() => setIsRemote(option.value)}
+                          />
+                          <span className="text-sm text-gray-700">{option.label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Selected Filters Tags */}
-            <div className="mt-6 flex flex-wrap gap-2">
-              {selectedTitles.map(title => (
-                <div key={title} className="bg-indigo-100 text-indigo-800 rounded-full px-3 py-1 text-sm flex items-center">
-                  {title}
-                  <button
-                    onClick={() => toggleFilter(title, setSelectedTitles, selectedTitles)}
-                    className="ml-1 text-indigo-800 hover:text-indigo-900"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              {selectedTypes.map(type => (
-                <div key={type} className="bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-sm flex items-center">
-                  {type}
-                  <button
-                    onClick={() => toggleFilter(type, setSelectedTypes, selectedTypes)}
-                    className="ml-1 text-blue-800 hover:text-blue-900"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              {selectedLocations.map(location => (
-                <div key={location} className="bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm flex items-center">
-                  {location}
-                  <button
-                    onClick={() => toggleFilter(location, setSelectedLocations, selectedLocations)}
-                    className="ml-1 text-green-800 hover:text-green-900"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              {selectedCompanies.map(company => (
-                <div key={company} className="bg-purple-100 text-purple-800 rounded-full px-3 py-1 text-sm flex items-center">
-                  {company}
-                  <button
-                    onClick={() => toggleFilter(company, setSelectedCompanies, selectedCompanies)}
-                    className="ml-1 text-purple-800 hover:text-purple-900"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              {isRemote && (
-                <div className="bg-yellow-100 text-yellow-800 rounded-full px-3 py-1 text-sm flex items-center">
-                  {isRemote === 'true' ? 'Remote' : 'On-site'}
-                  <button
-                    onClick={() => setIsRemote('')}
-                    className="ml-1 text-yellow-800 hover:text-yellow-900"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+              {/* Active Filter Tags */}
+              {getActiveFilterCount() > 0 && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTitles.map(title => (
+                      <span key={title} className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-sm font-medium">
+                        {title}
+                        <button
+                          onClick={() => toggleFilter(title, setSelectedTitles, selectedTitles)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                    {selectedTypes.map(type => (
+                      <span key={type} className="inline-flex items-center gap-1 bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm font-medium">
+                        {type}
+                        <button
+                          onClick={() => toggleFilter(type, setSelectedTypes, selectedTypes)}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                    {selectedLocations.map(location => (
+                      <span key={location} className="inline-flex items-center gap-1 bg-purple-100 text-purple-800 rounded-full px-3 py-1 text-sm font-medium">
+                        {location}
+                        <button
+                          onClick={() => toggleFilter(location, setSelectedLocations, selectedLocations)}
+                          className="text-purple-600 hover:text-purple-800"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                    {isRemote && (
+                      <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-800 rounded-full px-3 py-1 text-sm font-medium">
+                        {isRemote === 'true' ? 'Remote' : 'On-site'}
+                        <button
+                          onClick={() => setIsRemote('')}
+                          className="text-orange-600 hover:text-orange-800"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           </div>
         )}
-      </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <p className="text-red-600">Error: {error}</p>
-        </div>
-      )}
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-8 rounded-lg">
+            <div className="flex">
+              <div className="ml-3">
+                <p className="text-sm text-red-700">
+                  <strong>Error:</strong> {error}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* Job Results Section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Available Jobs</h2>
-          <p className="text-gray-600">
-            {loading ? (
-              <span className="flex items-center">
-                <Loader className="w-4 h-4 mr-2 animate-spin" />
-                Loading jobs...
-              </span>
-            ) : (
-              `Showing ${pagination.totalJobs} jobs`
+        {/* Results Section */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Results Header */}
+          <div className="border-b border-gray-200 px-6 py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader className="w-5 h-5 animate-spin" />
+                    Searching jobs...
+                  </span>
+                ) : (
+                  `${pagination.totalJobs.toLocaleString()} jobs found`
+                )}
+              </h2>
+              <div className="mt-2 sm:mt-0 text-sm text-gray-500">
+                Page {pagination.currentPage} of {pagination.totalPages}
+              </div>
+            </div>
+          </div>
+
+          {/* Job List */}
+          <div className="divide-y divide-gray-200">
+            {jobs.map(job => (
+              <div key={job.id} className="p-6 hover:bg-gray-50 transition-colors duration-150">
+                <JobCard
+                  job={job}
+                  saved={savedJobs.includes(job.id)}
+                  onSave={() => toggleSaveJob(job.id)}
+                />
+              </div>
+            ))}
+            
+            {jobs.length === 0 && !loading && (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 mx-auto mb-4 text-gray-300">
+                  <Search className="w-full h-full" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No jobs found
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  We couldn't find any jobs matching your search criteria.
+                </p>
+                <button
+                  onClick={clearFilters}
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Clear all filters
+                </button>
+              </div>
             )}
-          </p>
-        </div>
+          </div>
 
-        {/* Job List */}
-        <div className="space-y-6">
-          {jobs.map(job => (
-            <JobCard
-              key={job.id}
-              job={job}
-              saved={savedJobs.includes(job.id)}
-              onSave={() => toggleSaveJob(job.id)}
-            />
-          ))}
-          
-          {jobs.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">
-                No jobs match your search criteria.
-              </p>
-              <p className="text-gray-500">
-                Try adjusting your filters or search term.
-              </p>
+          {/* Pagination */}
+          {!loading && pagination.totalPages > 1 && (
+            <div className="border-t border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-700">
+                  Showing page {pagination.currentPage} of {pagination.totalPages}
+                </div>
+                <nav className="inline-flex rounded-lg shadow-sm">
+                  <button
+                    onClick={() => handlePageChange(pagination.currentPage - 1)}
+                    disabled={!pagination.hasPrevious}
+                    className="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  
+                  {/* Page Numbers */}
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    const pageNum = Math.max(1, pagination.currentPage - 2) + i;
+                    if (pageNum > pagination.totalPages) return null;
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-4 py-2 text-sm font-medium border-t border-b border-r border-gray-300 ${
+                          pageNum === pagination.currentPage
+                            ? 'bg-blue-50 text-blue-600 border-blue-300'
+                            : 'bg-white text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => handlePageChange(pagination.currentPage + 1)}
+                    disabled={!pagination.hasNext}
+                    className="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </nav>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Pagination */}
-        {!loading && pagination.totalPages > 1 && (
-          <div className="mt-8 flex justify-center">
-            <nav className="inline-flex rounded-md shadow">
-              <button
-                onClick={() => handlePageChange(pagination.currentPage - 1)}
-                disabled={!pagination.hasPrevious}
-                className="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              
-              {/* Page Numbers */}
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                const pageNum = Math.max(1, pagination.currentPage - 2) + i;
-                if (pageNum > pagination.totalPages) return null;
-                
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`px-3 py-2 border-t border-b border-r border-gray-300 text-sm font-medium ${
-                      pageNum === pagination.currentPage
-                        ? 'bg-blue-50 text-blue-600 border-blue-500'
-                        : 'bg-white text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              
-              <button
-                onClick={() => handlePageChange(pagination.currentPage + 1)}
-                disabled={!pagination.hasNext}
-                className="px-3 py-2 rounded-r-md border-t border-r border-b border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </nav>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom CTA */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="bg-gray-900 text-white p-8 rounded-lg text-center">
-          <h2 className="text-2xl font-bold mb-4">Ready to Take the Next Step?</h2>
-          <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-            Join thousands of job seekers who have found their dream careers. 
+        {/* Bottom CTA Section */}
+        <div className="mt-16 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-center text-white">
+          <h2 className="text-3xl font-bold mb-4">Ready to Take the Next Step?</h2>
+          <p className="text-blue-100 mb-8 text-lg max-w-2xl mx-auto">
+            Join thousands of professionals who have found their dream careers. 
             Create an account to apply to jobs, save your favorites, and get personalized recommendations.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/register"
-              className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-semibold transition-colors"
+              className="bg-white text-blue-600 px-8 py-3 rounded-lg hover:bg-gray-50 font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
-              Create Account
+              Create Free Account
             </Link>
             <Link
               to="/login"
-              className="border border-gray-600 text-white px-6 py-3 rounded-md hover:bg-gray-800 font-semibold transition-colors"
+              className="border-2 border-white text-white px-8 py-3 rounded-lg hover:bg-white hover:text-blue-600 font-semibold transition-all duration-200"
             >
               Sign In
             </Link>
