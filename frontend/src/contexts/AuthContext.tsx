@@ -34,6 +34,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Use VITE_ prefix for Vite environment variables
 const API_BASE_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IS_DEBUG = import.meta.env.REACT_APP_DEBUG === 'true';
+console.log('API_BASE_URL:', API_BASE_URL);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
