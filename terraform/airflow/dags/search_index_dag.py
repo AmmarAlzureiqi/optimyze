@@ -22,7 +22,7 @@ dag = DAG(
     'search_index_rebuild',
     default_args=default_args,
     description='Rebuild search index on Django backend',
-    schedule_interval='0 3 * * *',  # Daily at 3 AM (after job processing)
+    schedule_interval='0 7 * * *',  
     max_active_runs=1,
     tags=['search', 'django', 'index']
 )
@@ -107,11 +107,12 @@ def check_search_functionality(**context):
 # Task 1: Wait for job processing to complete (optional)
 wait_for_jobs = ExternalTaskSensor(
     task_id='wait_for_job_processing',
-    external_dag_id='job_processing_supabase_dag',  # Your existing job processing DAG
+    external_dag_id='job_processing_supabase_dag',
     external_task_id=None,  # Wait for entire DAG
     timeout=3600,  # 1 hour timeout
     poke_interval=300,  # Check every 5 minutes
     mode='reschedule',
+    execution_delta=timedelta(hours=1), 
     dag=dag
 )
 
