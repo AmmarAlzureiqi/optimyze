@@ -8,6 +8,20 @@ interface User {
   first_name: string;
   last_name: string;
   date_joined: string;
+   profile?: {
+    phone: string;
+    title: string;
+    city: string;
+    state: string;
+    country: string;
+    professional_summary: string;
+    skills: string[];
+    experience: any[];
+    education: any[];
+    linkedin_url: string;
+    github_url: string;
+    portfolio_url: string;
+  };
 }
 
 interface AuthContextType {
@@ -64,7 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const verifyToken = async (token: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/user/`, {
+      const response = await fetch(`${API_BASE_URL}/auth/profile/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -80,7 +94,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Temporarily add this to your AuthContext in the fetchUserProfile function
 const fetchUserProfile = async (token: string) => {
   try {
-    const url = `${API_BASE_URL}/auth/user/`;
+    const url = `${API_BASE_URL}/auth/profile/`;
     console.log('🔍 Fetching user profile from:', url); // Debug log
     
     const response = await fetch(url, {
