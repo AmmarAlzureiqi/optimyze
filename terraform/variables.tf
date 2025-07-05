@@ -1,8 +1,13 @@
-# variables.tf
 variable "aws_region" {
   description = "AWS region for resources"
   type        = string
   default     = "ca-central-1"
+}
+
+variable "instance_type" {
+  description = "EC2 instance type"
+  type        = string
+  default     = "t3.medium"
 }
 
 variable "public_key" {
@@ -10,6 +15,7 @@ variable "public_key" {
   type        = string
 }
 
+# Supabase Configuration
 variable "supabase_url" {
   description = "Supabase project URL"
   type        = string
@@ -21,13 +27,20 @@ variable "supabase_key" {
   sensitive   = true
 }
 
-# Airflow Configuration
-variable "airflow_instance_type" {
-  description = "EC2 instance type for Airflow"
+# Django Configuration
+variable "django_secret_key" {
+  description = "Django secret key"
   type        = string
-  default     = "t3.small"
+  sensitive   = true
 }
 
+variable "allowed_hosts" {
+  description = "Django allowed hosts (comma-separated)"
+  type        = string
+  default     = "localhost,127.0.0.1"
+}
+
+# Airflow Configuration
 variable "airflow_admin_user" {
   description = "Airflow admin username"
   type        = string
@@ -46,48 +59,9 @@ variable "airflow_admin_email" {
   default     = "admin@optimyze.com"
 }
 
-# Django Configuration
-variable "django_bundle_id" {
-  description = "Lightsail bundle ID for Django instance"
-  type        = string
-  default     = "micro_2_0" 
-}
-
-variable "django_secret_key" {
-  description = "Django secret key"
-  type        = string
-  sensitive   = true
-}
-
-variable "allowed_hosts" {
-  description = "Django allowed hosts (comma-separated)"
-  type        = string
-  default     = "localhost,127.0.0.1"
-}
-
 # Repository Configuration
 variable "github_repo" {
   description = "GitHub repository URL for the project"
-  type        = string
-  default     = ""
-}
-
-variable "github_branch" {
-  description = "GitHub branch to deploy"
-  type        = string
-  default     = "main"
-}
-
-variable "deploy_key" {
-  description = "GitHub deploy key (private key for repo access)"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-# Domain Configuration (optional)
-variable "domain_name" {
-  description = "Domain name for SSL certificate (optional)"
   type        = string
   default     = ""
 }
