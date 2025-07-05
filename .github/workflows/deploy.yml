@@ -31,10 +31,16 @@ jobs:
         port: 22
         script: |
           # Navigate to your Django project on EC2
-          cd /opt/airflow/tmp/repo/backend
+          cd /opt/airflow/tmp/repo
+          
+          # Handle any local changes
+          git stash || echo "No changes to stash"
           
           # Pull latest changes
           git pull origin main
+          
+          # Navigate to backend
+          cd backend
           
           # Activate virtual environment
           source venv/bin/activate
@@ -46,20 +52,16 @@ jobs:
           python manage.py migrate
           python manage.py collectstatic --noinput
           
-          # Rebuild search index if needed
+          # Rebuild search index
           python manage.py build_search_index --verbosity=1
           
           # Restart services
-          # If you're using systemd service for Django:
-          sudo systemctl restart django || echo "Django service not found, restarting manually"
+          sudo systemctl restart django
+          sudo systemctl restart nginx
           
-          # If you're using nginx:
-          sudo systemctl restart nginx || echo "Nginx not configured"
+          # Check service status
+          sudo systemctl is-active django
+          sudo systemctl is-active nginx
           
-          # If you're running Django manually, you might need to kill and restart
-          pkill -f "runserver" || echo "No runserver process found"
-          
-          # Start Django in background (if not using systemd)
-          nohup python manage.py runserver 0.0.0.0:8000 > /dev/null 2>&1 &
-          
-          echo "Deployment completed successfully!"
+          echo "✅ Deployment completed successfully!"
+          echo "Services restarted and running"
