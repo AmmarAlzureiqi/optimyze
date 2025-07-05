@@ -1,8 +1,10 @@
-name: Deploy to Lightsail
+name: Deploy to EC2
 
 on:
   push:
-    branches: [ main ] 
+    branches: [ main ]
+    paths:
+      - 'backend/**'  # Only trigger on backend changes
 
 jobs:
   deploy:
@@ -20,19 +22,44 @@ jobs:
         echo "Total lines in key:"
         echo "${{ secrets.SSH_PRIVATE_KEY }}" | wc -l
     
-    - name: Deploy to server
+    - name: Deploy to EC2
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: 15.223.81.114
+        host: 3.98.212.188  # Your EC2 IP
         username: ubuntu
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
-          cd /home/ubuntu/optimyze/backend
+          # Navigate to your Django project on EC2
+          cd /opt/airflow/tmp/repo/backend
+          
+          # Pull latest changes
           git pull origin main
-          source /home/ubuntu/optimyze/venv/bin/activate
+          
+          # Activate virtual environment
+          source venv/bin/activate
+          
+          # Install/update dependencies
           pip install -r requirements.txt
+          
+          # Run Django management commands
           python manage.py migrate
           python manage.py collectstatic --noinput
-          sudo systemctl restart gunicorn
-          sudo systemctl restart nginx
+          
+          # Rebuild search index if needed
+          python manage.py build_search_index --verbosity=1
+          
+          # Restart services
+          # If you're using systemd service for Django:
+          sudo systemctl restart django || echo "Django service not found, restarting manually"
+          
+          # If you're using nginx:
+          sudo systemctl restart nginx || echo "Nginx not configured"
+          
+          # If you're running Django manually, you might need to kill and restart
+          pkill -f "runserver" || echo "No runserver process found"
+          
+          # Start Django in background (if not using systemd)
+          nohup python manage.py runserver 0.0.0.0:8000 > /dev/null 2>&1 &
+          
+          echo "Deployment completed successfully!"
